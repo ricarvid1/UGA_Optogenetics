@@ -11,11 +11,8 @@ import MMCorePy #load MicroManager for device control
 import matplotlib.pyplot as plt
 from pylab import *
 import time
-#import imageio
-from scipy import misc
 import cv2
-#import skimage.io
-#from skimage import exposure
+from PIL import Image
 
 def waitAcquisition(mmc):      
     while True:
@@ -76,15 +73,19 @@ def main():
     
     waitAcquisition(mmc)
     print("--- %s seconds ---" % (time.time() - start_time))
-    
+    imList = []
+
     for x in range(numImages):
         #print mmc.getRemainingImageCount()
         img = mmc.popNextImage()
-        filename = "C:\\Users\\MOTIV\\Documents\\Python\\image%d.tiff" % (x,)
+        #filename = "C:\\Users\\MOTIV\\Documents\\Python\\image%d.tiff" % (x,)
+        filename = "sequence.tiff"
         #filename = "C:\\Users\\Administrateur\\Documents\\David\\image%d.tiff" % (x,)
         #misc.imsave(filename, imgNormalization(img))
-        cv2.imwrite(filename,img)
-        #imageio.imwrite(filename, imgNormalization(img))
+        imList.append(Image.fromarray(img))
+        imList[0].save(filename, compression="tiff_deflate", save_all=True,
+                       append_images=imList[1:])
+        #cv2.imwrite(filename,img)
         figure()
         plt.imshow(img, cmap='gray')
         #print imgNormalization(img).dtype
