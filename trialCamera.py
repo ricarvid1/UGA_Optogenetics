@@ -45,12 +45,12 @@ img = mmc.getImage()  # img - it's just numpy array
 img
 
 #plotting image
-from pylab import *
-ion()
+#from pylab import *
+#ion()
 import matplotlib.pyplot as plt
 #grayscale
-plt.close()
-figure()
+#plt.close()
+#figure()
 plt.imshow(img, cmap='gray')
 plt.show()  # And window will appear
 

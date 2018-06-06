@@ -5,7 +5,7 @@
 
 #code used to get an image sequence acquisition
 
-#Adding micro manager to the sys path
+#Importing necessary libraries
 import sys
 import MMCorePy #load MicroManager for device control
 import matplotlib.pyplot as plt
@@ -36,7 +36,7 @@ def imgNormalization(arr):
 
 def main():
     sys.path.append("C:\\Program Files\\Micro-Manager-1.4")
-    ion()
+    #ion()
     
     #loading camera
     mmc = MMCorePy.CMMCore()
@@ -57,7 +57,7 @@ def main():
     mmc.snapImage()
     img = mmc.getImage() #this is numpy array, by the way
     plt.imshow(img, cmap='gray')
-    plt.show()
+    #plt.show()
     
     #Region of Interest
     x = 0
@@ -87,9 +87,9 @@ def main():
         #imageio.imwrite(filename, imgNormalization(img))
         figure()
         plt.imshow(img, cmap='gray')
-        plt.show()
         #print imgNormalization(img).dtype
-    
+
+    plt.show()
     mmc.reset()
 
 
