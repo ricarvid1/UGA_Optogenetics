@@ -64,7 +64,7 @@ def main():
     mmc.setROI(x,y,xSize,ySize)
     start_time=time.time()
     #Image sequence acquisition
-    numImages = 2
+    numImages = 10
     intervalMs = 1
     mmc.clearCircularBuffer()
     mmc.startSequenceAcquisition(numImages,intervalMs,1)
