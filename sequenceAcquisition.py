@@ -11,7 +11,6 @@ import MMCorePy #load MicroManager for device control
 import matplotlib.pyplot as plt
 from pylab import *
 import time
-import cv2
 from PIL import Image
 
 def waitAcquisition(mmc):      
