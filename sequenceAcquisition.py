@@ -62,18 +62,19 @@ def main():
     ySize = 500
     mmc.setROI(x,y,xSize,ySize)
     start_time=time.time()
+    print (mmc.getImageBufferSize())
     #Image sequence acquisition
-    numImages = 10
+    numImages = 100
     intervalMs = 1
     mmc.clearCircularBuffer()
     mmc.startSequenceAcquisition(numImages,intervalMs,1)
     
-    #print mmc.getRemainingImageCount()
+    print mmc.getRemainingImageCount()
     
     waitAcquisition(mmc)
     print("--- %s seconds ---" % (time.time() - start_time))
     imList = []
-
+    print mmc.getRemainingImageCount()
     for x in range(numImages):
         #print mmc.getRemainingImageCount()
         img = mmc.popNextImage()
@@ -85,8 +86,8 @@ def main():
         imList[0].save(filename, compression="tiff_deflate", save_all=True,
                        append_images=imList[1:])
         #cv2.imwrite(filename,img)
-        figure()
-        plt.imshow(img, cmap='gray')
+        #figure()
+        #plt.imshow(img, cmap='gray')
         #print imgNormalization(img).dtype
 
     plt.show()
