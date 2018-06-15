@@ -58,13 +58,14 @@ def main():
     #Region of Interest
     x = 0
     y = 0
-    xSize = 500
-    ySize = 500
+    xSize = 512
+    ySize = 512
     mmc.setROI(x,y,xSize,ySize)
     start_time=time.time()
     print (mmc.getImageBufferSize())
     #Image sequence acquisition
-    numImages = 100
+    #mmc.setExposure(1)
+    numImages = 50
     intervalMs = 1
     mmc.clearCircularBuffer()
     mmc.startSequenceAcquisition(numImages,intervalMs,1)
@@ -94,5 +95,6 @@ def main():
     mmc.reset()
 
 
-if __name__ == "__main__": main()
+if __name__ == "__main__":
+    main()
     

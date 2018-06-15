@@ -70,12 +70,12 @@ class AcquisitionModel:
         self.mmc.clearCircularBuffer()
         self.mmc.startSequenceAcquisition(self.numImages, self.intervalMs, 1) # 1 is stopOnOverflow parameter
 
-        # print mmc.getRemainingImageCount()
+        print self.mmc.getRemainingImageCount()
 
         self.waitAcquisition()
         print("--- %s seconds ---" % (time.time() - start_time))
         imList = []
-        #plt.close('all')
+        print self.mmc.getRemainingImageCount()
         for x in range(self.numImages):
             # print mmc.getRemainingImageCount()
             img = self.mmc.popNextImage()
@@ -85,7 +85,7 @@ class AcquisitionModel:
             imList.append(Image.fromarray(img))
             imList[0].save(filename, compression="tiff_deflate", save_all=True,
                            append_images=imList[1:])
-        #print self.mmc.getRemainingImageCount()
+        print self.mmc.getRemainingImageCount()
 
     def resetCore(self):
         self.mmc.reset()
