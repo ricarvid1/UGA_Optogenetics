@@ -115,8 +115,8 @@ if __name__ == "__main__":
     # Fit
     # Cyto
 
-    xdata = np.arange(1, int(np.round(NbIm*0.1))) * ti
-    ydata = AC[2: int(np.round(NbIm*0.1))+1]
+    xdata = np.arange(1, int(np.round(NbIm*0.5))) * ti
+    ydata = AC[1: int(np.round(NbIm*0.5))]
     # parameters:tauD,g0,ginf
     pInit = [1, 0.1, 0.1]
     lb = [0.5, 0.00001, 0]
