@@ -141,7 +141,7 @@ if __name__ == "__main__":
     # Interaction model
 
     popi, picov = optimize.curve_fit(func_int, xdata, ydata,
-                                   p0=pInit, bounds=(lb, ub))
+                                     p0=pInit, bounds=(lb, ub))
     print (popi)
 
     yfiti = func_int(xdata, *popi)

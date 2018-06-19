@@ -52,7 +52,7 @@ def main():
     #mmc.setExposure(20) #ms
     mmc.snapImage()
     img = mmc.getImage() #this is numpy array, by the way
-    plt.imshow(img, cmap='gray')
+    #plt.imshow(img, cmap='gray')
     #plt.show()
     
     #Region of Interest
@@ -61,37 +61,37 @@ def main():
     xSize = 512
     ySize = 512
     mmc.setROI(x,y,xSize,ySize)
-    start_time=time.time()
-    print (mmc.getImageBufferSize())
+
     #Image sequence acquisition
     #mmc.setExposure(1)
     numImages = 50
     intervalMs = 1
     mmc.clearCircularBuffer()
-    mmc.startSequenceAcquisition(numImages,intervalMs,1)
-    
-    print mmc.getRemainingImageCount()
-    
-    waitAcquisition(mmc)
-    print("--- %s seconds ---" % (time.time() - start_time))
-    imList = []
-    print mmc.getRemainingImageCount()
-    for x in range(numImages):
-        #print mmc.getRemainingImageCount()
-        img = mmc.popNextImage()
-        #filename = "C:\\Users\\MOTIV\\Documents\\Python\\image%d.tiff" % (x,)
-        filename = "sequence.tiff"
-        #filename = "C:\\Users\\Administrateur\\Documents\\David\\image%d.tiff" % (x,)
-        #misc.imsave(filename, imgNormalization(img))
-        imList.append(Image.fromarray(img))
-        imList[0].save(filename, compression="tiff_deflate", save_all=True,
-                       append_images=imList[1:])
-        #cv2.imwrite(filename,img)
-        #figure()
-        #plt.imshow(img, cmap='gray')
-        #print imgNormalization(img).dtype
+    start_time = time.time()
+    mmc.startSequenceAcquisition(numImages, intervalMs, 1)
 
-    plt.show()
+    #waitAcquisition(mmc)
+    imList = []
+    flag = True
+    while True:
+        if mmc.getRemainingImageCount() > 0:
+            img = mmc.popNextImage()
+            #filename = "C:\\Users\\MOTIV\\Documents\\Python\\image%d.tiff" % (x,)
+            filename = "sequence.tiff"
+            #filename = "C:\\Users\\Administrateur\\Documents\\David\\image%d.tiff" % (x,)
+            imList.append(Image.fromarray(img))
+            imList[0].save(filename, compression="None", save_all=True,
+                           append_images=imList[1:])
+        elif not mmc.isSequenceRunning():
+            if flag:
+                print("Acquisition finished after %s seconds" % (time.time() - start_time))
+                flag = False
+            if len(imList) == numImages:
+                print("File saved after %s seconds" % (time.time() - start_time))
+                break
+
+    print("Remaining Images: %d" % mmc.getRemainingImageCount())
+    #plt.show()
     mmc.reset()
 
 

@@ -13,7 +13,7 @@ class Window(QWidget):
 
     def __init__(self):
         super(Window, self).__init__()
-        self.setGeometry(100, 200, 900, 650)
+        self.setGeometry(100, 80, 900, 650)
         self.setWindowTitle('TIRF Experiment Manager')
         self.setWindowIcon(QIcon('logo_LIPhy.png'))
         self.cameraModel = AcquisitionModel()
@@ -279,14 +279,31 @@ class Window(QWidget):
         self.cameraModel.setExposureTime(exposureTime)
         self.cameraModel.setNumImages(numImages)
         self.cameraModel.startSequenceAcquisition()
+        #if self.cameraModel.isAcquisitionDone():
+        #   self.successfulAcquisition()
         self.cameraModel.resetCore()
+    # Displays a pop-up indicating that the acquisition was successful
+
+    def successfulAcquisition(self):
+        msg = QMessageBox()
+        msg.setIcon(QMessageBox.Information)
+        msg.setText("The sequence acquisition was successful")
+        msg.setInformativeText("File saved in the project's home directory")
+        msg.setStandardButtons(QMessageBox.Ok)
+
     # Retrieves the values from GUI and sets a new ROI
     def setROIAcquisition(self):
         x = int(self.edt_roi_x.text())
         y = int(self.edt_roi_y.text())
-        xSize = int(self.edt_roi_width.text())
-        ySize = int(self.edt_roi_height.text())
-        self.cameraModel.setROI(x, y, xSize, ySize)
+        width = int(self.edt_roi_width.text())
+        if (x + width) > self.XSize:
+            width = self.XSize - x
+            self.edt_roi_width.setText(str(width))
+        height = int(self.edt_roi_height.text())
+        if (y + height) > self.YSize:
+            height = self.YSize - y
+            self.edt_roi_height.setText(str(height))
+        self.cameraModel.setROI(x, y, width, height)
         self.snapImage()
         self.displayImage()
     # Retrieves the values from GUI and sets a new ROI
@@ -302,7 +319,5 @@ class Window(QWidget):
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    #x = np.linspace(1, 5, num=60, endpoint=True)
-    #y = np.sin(2*np.pi*x)
     GUI = Window()
     sys.exit(app.exec_())

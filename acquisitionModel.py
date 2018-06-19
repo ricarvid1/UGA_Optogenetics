@@ -23,23 +23,27 @@ class AcquisitionModel:
         self.mmc.getVersionInfo()
         self.mmc.loadDevice('Camera', 'DemoCamera', 'DCam')
         # Hamamatsu
-        # self.mmc.loadDevice('Camera', 'HamamatsuHam', 'HamamatsuHam_DCAM'
+        # self.mmc.loadDevice('Camera', 'HamamatsuHam', 'HamamatsuHam_DCAM')
         self.mmc.initializeAllDevices()
         self.mmc.setCameraDevice('Camera')
         self.x = 0
         self.y = 0
-        self.xSize = int(self.mmc.getProperty('Camera', 'OnCameraCCDXSize'))
-        self.ySize = int(self.mmc.getProperty('Camera', 'OnCameraCCDYSize'))
+        self.xSize = int(self.mmc.getImageWidth())
+        self.ySize = int(self.mmc.getImageHeight())
+        self.width = self.xSize
+        self.height = self.ySize
         self.expTime = 1
         self.numImages = 1
         self.intervalMs = 1
+        self.successfulAcquisition = False
 
-    def setROI(self, x, y, xSize, ySize):
+
+    def setROI(self, x, y, width, height):
         self.x = x
         self.y = y
-        self.xSize = xSize
-        self.ySize = ySize
-        self.mmc.setROI(x, y, xSize, ySize)
+        self.width = width
+        self.height = height
+        self.mmc.setROI(x, y, width, height)
 
     def setExposureTime(self, expTime):
         self.expTime = expTime
@@ -64,28 +68,35 @@ class AcquisitionModel:
     def getImage(self):
         return self.img
 
+    def isAcquisitionDone(self):
+        return self.successfulAcquisition
+
     def startSequenceAcquisition(self):
         # Image sequence acquisition
-        start_time = time.time()
         self.mmc.clearCircularBuffer()
+        start_time = time.time()
         self.mmc.startSequenceAcquisition(self.numImages, self.intervalMs, 1) # 1 is stopOnOverflow parameter
 
-        print self.mmc.getRemainingImageCount()
-
-        self.waitAcquisition()
-        print("--- %s seconds ---" % (time.time() - start_time))
+        #self.waitAcquisition()
         imList = []
-        print self.mmc.getRemainingImageCount()
-        for x in range(self.numImages):
-            # print mmc.getRemainingImageCount()
-            img = self.mmc.popNextImage()
-            # filename = "C:\\Users\\MOTIV\\Documents\\Python\\image%d.tiff" % (x,)
-            filename = "sequence.tiff"
-            # filename = "C:\\Users\\Administrateur\\Documents\\David\\image%d.tiff" % (x,)
-            imList.append(Image.fromarray(img))
-            imList[0].save(filename, compression="tiff_deflate", save_all=True,
-                           append_images=imList[1:])
-        print self.mmc.getRemainingImageCount()
+        while True:
+            if self.mmc.getRemainingImageCount() > 0:
+                img = self.mmc.popNextImage()
+                #filename = "C:\\Users\\MOTIV\\Documents\\Python\\image%d.tiff" % (x,)
+                filename = "sequence.tiff"
+                #filename = "C:\\Users\\Administrateur\\Documents\\David\\image%d.tiff" % (x,)
+                imList.append(Image.fromarray(img))
+                imList[0].save(filename, compression="None", save_all=True,
+                               append_images=imList[1:])
+            elif not self.mmc.isSequenceRunning():
+                if not self.successfulAcquisition:
+                    self.successfulAcquisition = True
+                    print("Acquisition finished after %s seconds" % (time.time() - start_time))
+                if len(imList) == numImages:
+                    print("File saved after %s seconds" % (time.time() - start_time))
+                    break
+
+        print("Remaining Images: %d" % self.mmc.getRemainingImageCount())
 
     def resetCore(self):
         self.mmc.reset()
@@ -111,12 +122,7 @@ class AcquisitionModel:
 
 if __name__ == "__main__":
     cameraModel = AcquisitionModel()
-    print(cameraModel.mmc.getImageHeight())
-    #cameraModel.setROI(0, 0, 200, 100)
-    #print(cameraModel.mmc.getImageHeight())
-    #print(cameraModel.mmc.getProperty('Camera', 'OnCameraCCDXSize'))
-    #cameraModel.snapImage()
-    numImages = 10
+    numImages = 50
     intervalMs = 1
     exposureTime = 10
     cameraModel.setNumImages(numImages)
