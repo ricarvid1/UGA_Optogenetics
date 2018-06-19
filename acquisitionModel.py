@@ -73,26 +73,27 @@ class AcquisitionModel:
 
     def startSequenceAcquisition(self):
         # Image sequence acquisition
+        self.successfulAcquisition = False
         self.mmc.clearCircularBuffer()
         start_time = time.time()
         self.mmc.startSequenceAcquisition(self.numImages, self.intervalMs, 1) # 1 is stopOnOverflow parameter
 
         #self.waitAcquisition()
         imList = []
+        # filename = "C:\\Users\\MOTIV\\Documents\\Python\\image%d.tiff" % (x,)
+        filename = "sequence.tiff"
+        # filename = "C:\\Users\\Administrateur\\Documents\\David\\image%d.tiff" % (x,)
         while True:
             if self.mmc.getRemainingImageCount() > 0:
                 img = self.mmc.popNextImage()
-                #filename = "C:\\Users\\MOTIV\\Documents\\Python\\image%d.tiff" % (x,)
-                filename = "sequence.tiff"
-                #filename = "C:\\Users\\Administrateur\\Documents\\David\\image%d.tiff" % (x,)
                 imList.append(Image.fromarray(img))
-                imList[0].save(filename, compression="None", save_all=True,
-                               append_images=imList[1:])
             elif not self.mmc.isSequenceRunning():
                 if not self.successfulAcquisition:
                     self.successfulAcquisition = True
                     print("Acquisition finished after %s seconds" % (time.time() - start_time))
-                if len(imList) == numImages:
+                if len(imList) == self.numImages:
+                    imList[0].save(filename, compression="None", save_all=True,
+                                   append_images=imList[1:])
                     print("File saved after %s seconds" % (time.time() - start_time))
                     break
 
@@ -122,7 +123,7 @@ class AcquisitionModel:
 
 if __name__ == "__main__":
     cameraModel = AcquisitionModel()
-    numImages = 50
+    numImages = 3
     intervalMs = 1
     exposureTime = 10
     cameraModel.setNumImages(numImages)

@@ -66,27 +66,27 @@ def main():
     #mmc.setExposure(1)
     numImages = 50
     intervalMs = 1
+    successfulAcquisition = False
     mmc.clearCircularBuffer()
     start_time = time.time()
     mmc.startSequenceAcquisition(numImages, intervalMs, 1)
 
     #waitAcquisition(mmc)
     imList = []
-    flag = True
+    # filename = "C:\\Users\\MOTIV\\Documents\\Python\\image%d.tiff" % (x,)
+    filename = "sequence.tiff"
+    # filename = "C:\\Users\\Administrateur\\Documents\\David\\image%d.tiff" % (x,)
     while True:
         if mmc.getRemainingImageCount() > 0:
             img = mmc.popNextImage()
-            #filename = "C:\\Users\\MOTIV\\Documents\\Python\\image%d.tiff" % (x,)
-            filename = "sequence.tiff"
-            #filename = "C:\\Users\\Administrateur\\Documents\\David\\image%d.tiff" % (x,)
             imList.append(Image.fromarray(img))
-            imList[0].save(filename, compression="None", save_all=True,
-                           append_images=imList[1:])
         elif not mmc.isSequenceRunning():
-            if flag:
+            if not successfulAcquisition:
+                successfulAcquisition = True
                 print("Acquisition finished after %s seconds" % (time.time() - start_time))
-                flag = False
             if len(imList) == numImages:
+                imList[0].save(filename, compression="None", save_all=True,
+                               append_images=imList[1:])
                 print("File saved after %s seconds" % (time.time() - start_time))
                 break
 
