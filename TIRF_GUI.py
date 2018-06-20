@@ -308,9 +308,13 @@ class Window(QWidget):
     # Retrieves the values from GUI and sets a new ROI
     def resetROIAcquisition(self):
         self.edt_roi_x.setText('0')
+        self.cameraModel.setX(0)
         self.edt_roi_y.setText('0')
+        self.cameraModel.setY(0)
         self.edt_roi_width.setText(str(self.XSize))
+        self.cameraModel.setWidth(self.XSize)
         self.edt_roi_height.setText(str(self.YSize))
+        self.cameraModel.setHeight(self.YSize)
         self.cameraModel.mmc.clearROI()
         self.snapImage()
         self.displayImage()
