@@ -9,7 +9,6 @@
 import sys
 import MMCorePy #load MicroManager for device control
 import matplotlib.pyplot as plt
-from pylab import *
 import time
 from PIL import Image
 
@@ -29,17 +28,18 @@ def imgNormalization(arr):
         arr -= minVal
         arr *= (maxLim/(maxVal - minVal))
     return arr.astype('uint16')
+ 
 
-def main():
+if __name__ == "__main__":
+    
     sys.path.append("C:\\Program Files\\Micro-Manager-1.4")
     #ion()
     
     #loading camera
     mmc = MMCorePy.CMMCore()
-    mmc.getVersionInfo()
-    mmc.loadDevice('Camera', 'DemoCamera', 'DCam')
+    #mmc.loadDevice('Camera', 'DemoCamera', 'DCam')
     #Hamamatsu
-    #mmc.loadDevice('Camera', 'HamamatsuHam', 'HamamatsuHam_DCAM')    
+    mmc.loadDevice('Camera', 'HamamatsuHam', 'HamamatsuHam_DCAM')    
 
     mmc.initializeAllDevices()
     mmc.setCameraDevice('Camera')
@@ -64,12 +64,15 @@ def main():
 
     #Image sequence acquisition
     #mmc.setExposure(1)
-    numImages = 50
+    numImages = 5
     intervalMs = 1
     successfulAcquisition = False
-    mmc.clearCircularBuffer()
+    #mmc.clearCircularBuffer()
     start_time = time.time()
-    mmc.startSequenceAcquisition(numImages, intervalMs, 1)
+    mmc.prepareSequenceAcquisition('Camera')
+    mmc.startSequenceAcquisition(numImages, intervalMs, True)
+    
+    #mmc.stopSequenceAcquisition('Camera') 
 
     #waitAcquisition(mmc)
     imList = []
@@ -91,10 +94,40 @@ def main():
                 break
 
     print("Remaining Images: %d" % mmc.getRemainingImageCount())
-    #plt.show()
-    mmc.reset()
+    #mmc.reset()
+    mmc.waitForDevice('Camera')
+      
 
-
-if __name__ == "__main__":
-    main()
+    #SECOND ACQUISITION
+    mmc.unloadDevice('Camera')
+    mmc.loadDevice('Camera', 'HamamatsuHam', 'HamamatsuHam_DCAM')    
+    mmc.initializeAllDevices()
+    mmc.setCameraDevice('Camera')
     
+    successfulAcquisition = False
+    mmc.clearCircularBuffer()
+    start_time = time.time()
+    
+    mmc.prepareSequenceAcquisition('Camera')
+    mmc.startSequenceAcquisition(numImages, intervalMs, True)
+
+
+    imList = []
+    # filename = "C:\\Users\\MOTIV\\Documents\\Python\\image%d.tiff" % (x,)
+    filename = "sequence2.tiff"
+    # filename = "C:\\Users\\Administrateur\\Documents\\David\\image%d.tiff" % (x,)
+    while True:
+        if mmc.getRemainingImageCount() > 0:
+            img = mmc.popNextImage()
+            imList.append(Image.fromarray(img))
+        elif not mmc.isSequenceRunning():
+            if not successfulAcquisition:
+                successfulAcquisition = True
+                print("Acquisition finished after %s seconds" % (time.time() - start_time))
+            if len(imList) == numImages:
+                imList[0].save(filename, compression="None", save_all=True,
+                               append_images=imList[1:])
+                print("File saved after %s seconds" % (time.time() - start_time))
+                break
+
+    print("Remaining Images: %d" % mmc.getRemainingImageCount())
