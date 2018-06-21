@@ -90,6 +90,7 @@ class AcquisitionModel:
         if self.numAcquisitions > 0:
             self.reloadCamera()
             self.setROI(self.x, self.y, self.width, self.height)
+            self.setExposureTime(self.expTime)
 
         self.successfulAcquisition = False
         print("Acquiring %d Images. Exposure time: %d ms" % (self.numImages, self.expTime))
