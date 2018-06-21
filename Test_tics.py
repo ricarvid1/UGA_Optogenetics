@@ -3,14 +3,15 @@ import tkFileDialog
 from PIL import Image
 import matplotlib.image as mpimg
 from scipy import optimize
-from pylab import *
+import matplotlib.pyplot as plt
+import numpy as np
 
 
 def func_cyto(x, *p):
     return p[1] * 1.0/(1 + x / p[0]) + p[2]
 
 def func_int(x, *p):
-    return p[1] * exp(-x / p[0]) + p[2]
+    return p[1] * np.exp(-x / p[0]) + p[2]
 
 
 if __name__ == "__main__":
@@ -73,12 +74,12 @@ if __name__ == "__main__":
     print(Bkg.shape)
 
     backgrd = np.mean(Bkg)
-    Icorr = I-backgrd
+    Icorr = I - backgrd
 
-    Imoy = mean(I, axis=2)
-    Icorrmoy = mean(Icorr, axis=2)
+    Imoy = np.mean(I, axis=2)
+    Icorrmoy = np.mean(Icorr, axis=2)
 
-    figure()
+    plt.figure()
     plt.subplot(2, 1, 1)
     plt.imshow(Imoy, cmap='gray')
     plt.title("Average of {:d} Images".format(nbImTot))
@@ -89,10 +90,10 @@ if __name__ == "__main__":
     plt.colorbar()
     NbIm = nbImTot
 
-    AC = zeros(NbIm)
+    AC = np.zeros(NbIm)
     for i in range(NbIm):
         a = np.zeros(NbIm-i)
-        for j in range(NbIm-i-1):
+        for j in range(NbIm-i):
             temp = Icorr[:, :, j]
             Imoyj = np.mean(temp)
             #print(temp)
@@ -107,7 +108,7 @@ if __name__ == "__main__":
     tau = np.arange(1, NbIm) * ti
     print(tau.shape)
     print(AC[1:].shape)
-    figure()
+    plt.figure()
     plt.plot(tau, AC[1:])
     plt.title("Autocorrelation")
 
@@ -117,6 +118,10 @@ if __name__ == "__main__":
 
     xdata = np.arange(1, int(np.round(NbIm*0.5))) * ti
     ydata = AC[1: int(np.round(NbIm*0.5))]
+    print(xdata.shape)
+    print(ydata.shape)
+
+
     # parameters:tauD,g0,ginf
     pInit = [1, 0.1, 0.1]
     lb = [0.5, 0.00001, 0]
@@ -156,4 +161,5 @@ if __name__ == "__main__":
     immoi = ginfi / (ginfi + g0i)
     print(immoi * 100)
     plt.plot(xdata, yfiti, 'g--')
+
     plt.show()
