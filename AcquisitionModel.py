@@ -20,12 +20,12 @@ class AcquisitionModel:
         # loading camera
         self.mmc = MMCorePy.CMMCore()
         self.mmc.getVersionInfo()
-        # self.mmc.loadDevice('Camera', 'DemoCamera', 'DCam')
+        self.mmc.loadDevice('Camera', 'DemoCamera', 'DCam')
         # Hamamatsu
-        self.mmc.loadDevice('Camera', 'HamamatsuHam', 'HamamatsuHam_DCAM')
+        # self.mmc.loadDevice('Camera', 'HamamatsuHam', 'HamamatsuHam_DCAM')
         self.mmc.initializeAllDevices()
         self.mmc.setCameraDevice('Camera')
-        self.mmc.setCircularBufferMemoryFootprint(2048)  # Buffer siwe is set to 1Gb acquisitions with mqny frames
+        self.mmc.setCircularBufferMemoryFootprint(1024)  # Buffer siwe is set to 1Gb acquisitions with mqny frames
         self.x = 0
         self.y = 0
         self.xSize = int(self.mmc.getImageWidth())

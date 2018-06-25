@@ -17,7 +17,6 @@ class Window(QWidget):
         self.setWindowTitle('TIRF Experiment Manager')
         self.setWindowIcon(QIcon('logo_LIPhy.png'))
         self.cameraModel = AcquisitionModel()
-        self.snapImage()
         self.home()
 
     def home(self):
@@ -58,19 +57,22 @@ class Window(QWidget):
         lbl_cam_ms = QLabel("ms")
         lbl_cam_num = QLabel("Number of Im. ")
         # Edit lines
+        self.exposureTime = 10
         self.edt_cam_exp = QLineEdit()
         self.edt_cam_exp.setValidator(QIntValidator())
         self.edt_cam_exp.setAlignment(Qt.AlignRight)
         self.edt_cam_exp.setMaxLength(4)
-        self.edt_cam_exp.setText('1')
+        self.edt_cam_exp.setText(str(self.exposureTime))
+        self.numImages = 1
         self.edt_cam_num = QLineEdit()
         self.edt_cam_num.setValidator(QIntValidator())
         self.edt_cam_num.setAlignment(Qt.AlignRight)
         self.edt_cam_num.setMaxLength(4)
-        self.edt_cam_num.setText('1')
+        self.edt_cam_num.setText(str(self.numImages))
         # Buttons
-        self.btn_cam_roi = QPushButton("Select ROI")
+        self.btn_cam_snap = QPushButton("Capture Image")
         self.btn_cam_acq = QPushButton("Acquire")
+        self.btn_cam_snap.clicked.connect(self.captureImage)
         self.btn_cam_acq.clicked.connect(self.startSequenceAcquisition)
         # grid
         grid_cam = QGridLayout()
@@ -78,10 +80,10 @@ class Window(QWidget):
         grid_cam.addWidget(lbl_cam_exp, 1, 0, 1, 1)
         grid_cam.addWidget(self.edt_cam_exp, 1, 1, 1, 1)
         grid_cam.addWidget(lbl_cam_ms, 1, 2, 1, 1)
-        #grid_cam.addWidget(self.btn_cam_roi, 2, 0, 1, 2)
-        grid_cam.addWidget(lbl_cam_num, 2, 0, 1, 1)
-        grid_cam.addWidget(self.edt_cam_num, 2, 1, 1, 1)
-        grid_cam.addWidget(self.btn_cam_acq, 3, 0, 1, 2)
+        grid_cam.addWidget(self.btn_cam_snap, 2, 0, 1, 2)
+        grid_cam.addWidget(lbl_cam_num, 3, 0, 1, 1)
+        grid_cam.addWidget(self.edt_cam_num, 3, 1, 1, 1)
+        grid_cam.addWidget(self.btn_cam_acq, 4, 0, 1, 2)
         # GroupBox
         group_cam = QGroupBox("Camera")
         group_cam.setLayout(grid_cam)
@@ -249,7 +251,7 @@ class Window(QWidget):
         fig = Figure()
         self.ax = fig.add_subplot(111)
         self.graph = FigureCanvas(fig)
-        self.displayImage()
+        self.captureImage()
         # Navigation widget
         # it takes the Canvas widget and a parent
         toolbar = NavigationToolbar(self.graph, self)
@@ -271,13 +273,20 @@ class Window(QWidget):
         self.ax.imshow(self.img, cmap='gray')
         self.graph.draw_idle()
 
+    # Captures an image with the desired exposure Time and displays it
+    def captureImage(self):
+        self.exposureTime = int(self.edt_cam_exp.text())
+        self.cameraModel.setExposureTime(self.exposureTime)
+        self.snapImage()
+        self.displayImage()
+
     # Interface Controller methods start here
     # Retrieves values from GUI and start the sequence acquisition
     def startSequenceAcquisition(self):
-        exposureTime = int(self.edt_cam_exp.text())
-        numImages = int(self.edt_cam_num.text())
-        self.cameraModel.setExposureTime(exposureTime)
-        self.cameraModel.setNumImages(numImages)
+        self.exposureTime = int(self.edt_cam_exp.text())
+        self.numImages = int(self.edt_cam_num.text())
+        self.cameraModel.setExposureTime(self.exposureTime)
+        self.cameraModel.setNumImages(self.numImages)
         self.cameraModel.startSequenceAcquisition()
         if self.cameraModel.isAcquisitionDone():
             self.successfulAcquisition()
@@ -302,8 +311,7 @@ class Window(QWidget):
             height = self.YSize - y
         self.edt_roi_height.setText(str(height))
         self.cameraModel.setROI(x, y, width, height)
-        self.snapImage()
-        self.displayImage()
+        self.captureImage()
 
     # Retrieves the values from GUI and sets a new ROI
     def resetROIAcquisition(self):
@@ -316,8 +324,7 @@ class Window(QWidget):
         self.edt_roi_height.setText(str(self.YSize))
         self.cameraModel.setHeight(self.YSize)
         self.cameraModel.mmc.clearROI()
-        self.snapImage()
-        self.displayImage()
+        self.captureImage()
 
 
 if __name__ == '__main__':
