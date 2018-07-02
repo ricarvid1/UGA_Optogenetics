@@ -20,7 +20,7 @@ class Window(QWidget):
         self.home()
 
     def home(self):
-        #Left Section
+        # Left Section
         # Left boxes are added here
         vbox_main = QVBoxLayout()
 

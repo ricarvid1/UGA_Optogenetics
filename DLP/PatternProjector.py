@@ -86,7 +86,7 @@ class smallWindow(QMainWindow):
         self.pattern.resize(RectScreen1.width(), RectScreen1.height())
         # background of window is set to black
         palette = self.pattern.palette()
-        palette.setColor(self.main.backgroundRole(), Qt.black)
+        palette.setColor(self.pattern.backgroundRole(), Qt.black)
         self.pattern.setPalette(palette)
         # pattern is shown
         self.pattern.showMaximized()
@@ -106,10 +106,10 @@ class smallWindow(QMainWindow):
         self.center.setLayout(vbox)
 
     def plot(self):
-        self.main.plot()
+        self.pattern.plot()
 
     def reset(self):
-        self.main.reset()
+        self.pattern.reset()
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
