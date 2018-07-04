@@ -7,9 +7,10 @@ from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as Navigatio
 from matplotlib.figure import Figure
 import numpy as np
 from AcquisitionModel import AcquisitionModel
+from DLP.PatternWindow import PatternWindow
 
 
-class Window(QWidget):
+class Window(QMainWindow):
 
     def __init__(self):
         super(Window, self).__init__()
@@ -20,6 +21,9 @@ class Window(QWidget):
         self.home()
 
     def home(self):
+        # central widget is created
+        self.central = QWidget()
+        self.setCentralWidget(self.central)
         # Left Section
         # Left boxes are added here
         vbox_main = QVBoxLayout()
@@ -40,12 +44,15 @@ class Window(QWidget):
         vbox_main_exp.addStretch()
         vbox_main_exp.addWidget(self.setExpHome())
 
+        # Secondary window
+        self.setPatternWindow()
+
         #Main HBOX containing all subelements
         hbox_main = QHBoxLayout()
         hbox_main.addLayout(vbox_main)
         hbox_main.addStretch()
         hbox_main.addLayout(vbox_main_exp)
-        self.setLayout(hbox_main)
+        self.central.setLayout(hbox_main)
         # Showing all the graphs
         self.show()
 
@@ -172,6 +179,9 @@ class Window(QWidget):
         self.edt_dmd_led.setText('0')
         # Buttons
         self.btn_dmd_roi = QPushButton("Set Activation ROI")
+        self.btn_dmd_roi.clicked.connect(self.fillPattern)
+        self.btn_dmd_reset = QPushButton("Reset Activation ROI")
+        self.btn_dmd_reset.clicked.connect(self.resetPattern)
         # Form layout
         flo_dmd = QFormLayout()
         flo_dmd.addRow(lbl_dmd_irr, self.edt_dmd_irr)
@@ -181,6 +191,7 @@ class Window(QWidget):
         # Vertical box
         vbox_dmd = QVBoxLayout()
         vbox_dmd.addWidget(self.btn_dmd_roi)
+        vbox_dmd.addWidget(self.btn_dmd_reset)
         vbox_dmd.addLayout(flo_dmd)
         # GroupBox
         group_dmd = QGroupBox("DMD")
@@ -252,6 +263,8 @@ class Window(QWidget):
         self.ax = fig.add_subplot(111)
         self.graph = FigureCanvas(fig)
         self.captureImage()
+        # Setting event handling
+        cid_dmd_region = self.graph.mpl_connect('button_press_event', self.onclick)
         # Navigation widget
         # it takes the Canvas widget and a parent
         toolbar = NavigationToolbar(self.graph, self)
@@ -263,6 +276,23 @@ class Window(QWidget):
         group_graph = QGroupBox("Image Display")
         group_graph.setLayout(vbox_graph)
         return group_graph
+
+    def setPatternWindow(self):
+        self.vertices = np.zeros((1, 2))
+
+        # secondary window used to show the pattern
+        self.patternScreen = PatternWindow(self.XSize, self.YSize)
+        # window is placed on the secondary desktop screen to be projected
+        pDesktop = QApplication.desktop()
+        RectScreen1 = pDesktop.screenGeometry(1)
+        self.patternScreen.move(RectScreen1.left(), RectScreen1.top())
+        self.patternScreen.resize(RectScreen1.width(), RectScreen1.height())
+        # background of window is set to black
+        palette = self.patternScreen.palette()
+        palette.setColor(self.patternScreen.backgroundRole(), Qt.black)
+        self.patternScreen.setPalette(palette)
+        # pattern is shown
+        self.patternScreen.showMaximized()
 
     def snapImage(self):
         self.cameraModel.snapImage()
@@ -279,6 +309,25 @@ class Window(QWidget):
         self.cameraModel.setExposureTime(self.exposureTime)
         self.snapImage()
         self.displayImage()
+
+    # Fills the selected area in the secondary window
+    def fillPattern(self):
+        self.patternScreen.getAxis().fill(self.vertices[1:, 0], self.vertices[1:, 1], "w")
+        self.patternScreen.getCanvas().draw_idle()
+
+    # Fills the selected area in the secondary window
+    def resetPattern(self):
+        self.vertices = np.zeros((1, 2))
+        self.patternScreen.reset()
+        self.captureImage()
+
+    # Testing event handling
+    def onclick(self, event):
+        if event.inaxes == self.ax:
+            coordinates = np.array([[event.xdata, event.ydata]])
+            self.vertices = np.append(self.vertices, coordinates, axis=0)
+            self.ax.scatter(self.vertices[1:, 0], self.vertices[1:, 1], color='red', marker='o')
+            self.graph.draw_idle()
 
     # Interface Controller methods start here
     # Retrieves values from GUI and start the sequence acquisition
