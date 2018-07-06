@@ -21,7 +21,7 @@ class DLPModel:
         self.XSize = XSize
         self.YSize = YSize
         self.vertices = np.zeros((1, 2))
-        self.exposureDone = False
+        self.activationDone = False
         self.numPeriods = 5
         # secondary window used to show the pattern
         self.patternScreen = PatternWindow(self.XSize, self.YSize)
@@ -58,5 +58,5 @@ class DLPModel:
             pycrafter4500.stop_display()
             self.resetPattern()
             time.sleep(1)
-        self.exposureDone = True
-        return self.exposureDone
+        self.activationDone = True
+        return self.activationDone

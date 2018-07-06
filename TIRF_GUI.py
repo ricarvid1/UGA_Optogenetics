@@ -316,7 +316,7 @@ class Window(QMainWindow):
         self.displayImage()
 
     def launchExperiment(self):
-        self.dlp.startActivation()
+        activationDone = self.dlp.startActivation()
 
     # Fills the selected area in the secondary window
     def setPattern(self):
