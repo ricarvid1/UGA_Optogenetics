@@ -8,6 +8,7 @@ from matplotlib.figure import Figure
 import numpy as np
 from AcquisitionModel import AcquisitionModel
 from DLP.PatternWindow import PatternWindow
+from DLP.DLPModel import DLPModel
 
 
 class Window(QMainWindow):
@@ -153,9 +154,9 @@ class Window(QMainWindow):
         # Labels
         # lbl_dmd = QLabel("DMD")
         lbl_dmd_irr = QLabel("Irradiation")
-        lbl_dmd_iper = QLabel("Irradiation Period")
-        lbl_dmd_pulse = QLabel("Pulse Duration")
-        lbl_dmd_led = QLabel("LED Intensity")
+        lbl_dmd_iper = QLabel("Irradiation Period (ms)")
+        lbl_dmd_pulse = QLabel("Pulse Duration (ms)")
+        lbl_dmd_led = QLabel("LED Intensity  (0-255)")
         # Edit lines
         self.edt_dmd_irr = QLineEdit()
         self.edt_dmd_irr.setValidator(QIntValidator())
@@ -173,13 +174,13 @@ class Window(QMainWindow):
         self.edt_dmd_pulse.setMaxLength(3)
         self.edt_dmd_pulse.setText('0')
         self.edt_dmd_led = QLineEdit()
-        self.edt_dmd_led.setValidator(QIntValidator())
+        self.edt_dmd_led.setValidator(QIntValidator(0, 255))
         self.edt_dmd_led.setAlignment(Qt.AlignRight)
         self.edt_dmd_led.setMaxLength(3)
         self.edt_dmd_led.setText('0')
         # Buttons
         self.btn_dmd_roi = QPushButton("Set Activation ROI")
-        self.btn_dmd_roi.clicked.connect(self.fillPattern)
+        self.btn_dmd_roi.clicked.connect(self.setPattern)
         self.btn_dmd_reset = QPushButton("Reset Activation ROI")
         self.btn_dmd_reset.clicked.connect(self.resetPattern)
         # Form layout
@@ -206,7 +207,7 @@ class Window(QMainWindow):
         lbl_exp_pre_num = QLabel("Nb. Im.")
         lbl_exp_pre_exp = QLabel("Exposure")
         lbl_exp_act = QLabel("Activation")
-        lbl_exp_pos_seq = QLabel("Preactivation Sequence")
+        lbl_exp_pos_seq = QLabel("Postactivation Sequence")
         lbl_exp_pos_num = QLabel("Nb. Im.")
         lbl_exp_pos_exp = QLabel("Exposure")
         # Checkboxes
@@ -219,6 +220,7 @@ class Window(QMainWindow):
         self.chck_exp_pos_exp = QCheckBox()
         # Buttons
         self.btn_exp_start = QPushButton("Launch")
+        self.btn_exp_start.clicked.connect(self.launchExperiment)
         self.btn_exp_stop = QPushButton("Stop")
         # Hboxes EXP
         hbox_exp_pre = QHBoxLayout()
@@ -264,7 +266,7 @@ class Window(QMainWindow):
         self.graph = FigureCanvas(fig)
         self.captureImage()
         # Setting event handling
-        cid_dmd_region = self.graph.mpl_connect('button_press_event', self.onclick)
+        cid_dmd_region = self.graph.mpl_connect('button_press_event', self.selectPatternFromGraph)
         # Navigation widget
         # it takes the Canvas widget and a parent
         toolbar = NavigationToolbar(self.graph, self)
@@ -278,6 +280,9 @@ class Window(QMainWindow):
         return group_graph
 
     def setPatternWindow(self):
+        self.vertices = np.zeros((1, 2))
+        self.dlp = DLPModel(self.XSize, self.YSize)
+        '''
         self.vertices = np.zeros((1, 2))
 
         # secondary window used to show the pattern
@@ -293,7 +298,7 @@ class Window(QMainWindow):
         self.patternScreen.setPalette(palette)
         # pattern is shown
         self.patternScreen.showMaximized()
-
+        '''
     def snapImage(self):
         self.cameraModel.snapImage()
         self.img = self.cameraModel.getImage()
@@ -310,19 +315,25 @@ class Window(QMainWindow):
         self.snapImage()
         self.displayImage()
 
-    # Fills the selected area in the secondary window
-    def fillPattern(self):
-        self.patternScreen.getAxis().fill(self.vertices[1:, 0], self.vertices[1:, 1], "w")
-        self.patternScreen.getCanvas().draw_idle()
+    def launchExperiment(self):
+        self.dlp.startActivation()
 
     # Fills the selected area in the secondary window
+    def setPattern(self):
+        if len(self.vertices) > 3:
+            self.dlp.setVertices(self.vertices)
+            self.dlp.setPattern()
+            #self.patternScreen.getAxis().fill(self.vertices[1:, 0], self.vertices[1:, 1], "w")
+            #self.patternScreen.getCanvas().draw_idle()
+
+    # Resets the pattern on the secondary window
     def resetPattern(self):
         self.vertices = np.zeros((1, 2))
-        self.patternScreen.reset()
         self.captureImage()
+        self.dlp.resetPattern()
 
     # Testing event handling
-    def onclick(self, event):
+    def selectPatternFromGraph(self, event):
         if event.inaxes == self.ax:
             coordinates = np.array([[event.xdata, event.ydata]])
             self.vertices = np.append(self.vertices, coordinates, axis=0)
