@@ -186,19 +186,24 @@ class dlpc350(object):
 
     def control_LED(self, RGB):
         # LED Enable Outputs
-        #payload = bits_to_bytes('00001111')
-        #self.command('w', 0xff, 0x1a, 0x07, payload)
+        payload = bits_to_bytes('00001111')
+        self.command('w', 0x00, 0x1a, 0x07, payload)
         # LED Driver Current Control
-        self.command('w', 0xff, 0x0b, 0x01, RGB)
+        self.command('w', 0x00, 0x0b, 0x01, RGB)
 
     def disable_LED(self):
         payload = bits_to_bytes('00000000')
-        self.command('w', 0xff, 0x1a, 0x07, payload)
+        self.command('w', 0x00, 0x1a, 0x07, payload)
 
     def enable_LED(self):
         # LED Enable Outputs
-        payload = bits_to_bytes('00000111')
-        self.command('w', 0xff, 0x1a, 0x07, payload)
+        payload = bits_to_bytes('00000100')
+        self.command('w', 0x00, 0x1a, 0x07, payload)
+        
+    def reset(self):
+        # Software reset
+        payload = bits_to_bytes('00000001')
+        self.command('w', 0x00, 0x08, 0x02, payload)
 
     def set_power_mode(self, do_standby=False):
         """
@@ -515,14 +520,21 @@ def stop_display():
         lcr.disable_LED()
 
 
-def start_display(R, G, B):
+def start_display(RGB):
     """
     Starts the dlp projection
     """
     with connect_usb() as lcr:
         lcr.pattern_display('stop')
         lcr.enable_LED()
-        lcr.control_LED([R, G, B])
+        lcr.control_LED(RGB)
+        
+def software_reset():
+    """
+    Performs software reset on the dlp
+    """
+    with connect_usb() as lcr:
+        lcr.reset()
 
 
 def power_down():
