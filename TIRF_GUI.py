@@ -59,6 +59,8 @@ class Window(QMainWindow):
 
     def setCamHome(self):
         # Camera section is added using the grid option
+        # Variables
+        self.isAcquisitionDone = False
         # Labels
         # lbl_cam = QLabel("Camera")
         lbl_cam_exp = QLabel("Exposure Time")
@@ -151,33 +153,48 @@ class Window(QMainWindow):
 
     def setDMDHome(self):
         # DMD section is added using the form option
+        # Variables
+        self.isActivationDone = False
         # Labels
         # lbl_dmd = QLabel("DMD")
-        lbl_dmd_irr = QLabel("Irradiation")
         lbl_dmd_iper = QLabel("Irradiation Period (ms)")
         lbl_dmd_pulse = QLabel("Pulse Duration (ms)")
-        lbl_dmd_led = QLabel("LED Intensity  (0-255)")
+        lbl_dmd_num = QLabel("Number of Periods")
+        #♦lbl_dmd_led = QLabel("LED Current  (0-255)")
+        lbl_dmd_red = QLabel("Red")
+        lbl_dmd_green = QLabel("Green")
+        lbl_dmd_blue = QLabel("Blue")
         # Edit lines
-        self.edt_dmd_irr = QLineEdit()
-        self.edt_dmd_irr.setValidator(QIntValidator())
-        self.edt_dmd_irr.setAlignment(Qt.AlignRight)
-        self.edt_dmd_irr.setMaxLength(3)
-        self.edt_dmd_irr.setText('0')
         self.edt_dmd_iper = QLineEdit()
         self.edt_dmd_iper.setValidator(QIntValidator())
         self.edt_dmd_iper.setAlignment(Qt.AlignRight)
-        self.edt_dmd_iper.setMaxLength(3)
-        self.edt_dmd_iper.setText('0')
+        self.edt_dmd_iper.setMaxLength(4)
+        self.edt_dmd_iper.setText('10')
         self.edt_dmd_pulse = QLineEdit()
         self.edt_dmd_pulse.setValidator(QIntValidator())
         self.edt_dmd_pulse.setAlignment(Qt.AlignRight)
-        self.edt_dmd_pulse.setMaxLength(3)
-        self.edt_dmd_pulse.setText('0')
-        self.edt_dmd_led = QLineEdit()
-        self.edt_dmd_led.setValidator(QIntValidator(0, 255))
-        self.edt_dmd_led.setAlignment(Qt.AlignRight)
-        self.edt_dmd_led.setMaxLength(3)
-        self.edt_dmd_led.setText('0')
+        self.edt_dmd_pulse.setMaxLength(4)
+        self.edt_dmd_pulse.setText('10')
+        self.edt_dmd_num = QLineEdit()
+        self.edt_dmd_num.setValidator(QIntValidator(0, 20))
+        self.edt_dmd_num.setAlignment(Qt.AlignRight)
+        self.edt_dmd_num.setMaxLength(4)
+        self.edt_dmd_num.setText('1')
+        self.edt_dmd_red = QLineEdit()
+        self.edt_dmd_red.setValidator(QIntValidator(0, 255))
+        self.edt_dmd_red.setAlignment(Qt.AlignRight)
+        self.edt_dmd_red.setMaxLength(3)
+        self.edt_dmd_red.setText('104')
+        self.edt_dmd_green = QLineEdit()
+        self.edt_dmd_green.setValidator(QIntValidator(0, 255))
+        self.edt_dmd_green.setAlignment(Qt.AlignRight)
+        self.edt_dmd_green.setMaxLength(3)
+        self.edt_dmd_green.setText('135')
+        self.edt_dmd_blue = QLineEdit()
+        self.edt_dmd_blue.setValidator(QIntValidator(0, 255))
+        self.edt_dmd_blue.setAlignment(Qt.AlignRight)
+        self.edt_dmd_blue.setMaxLength(3)
+        self.edt_dmd_blue.setText('130')
         # Buttons
         self.btn_dmd_roi = QPushButton("Set Activation ROI")
         self.btn_dmd_roi.clicked.connect(self.setPattern)
@@ -185,16 +202,25 @@ class Window(QMainWindow):
         self.btn_dmd_reset.clicked.connect(self.resetPattern)
         # Form layout
         flo_dmd = QFormLayout()
-        flo_dmd.addRow(lbl_dmd_irr, self.edt_dmd_irr)
         flo_dmd.addRow(lbl_dmd_iper, self.edt_dmd_iper)
         flo_dmd.addRow(lbl_dmd_pulse, self.edt_dmd_pulse)
-        flo_dmd.addRow(lbl_dmd_led, self.edt_dmd_led)
+        flo_dmd.addRow(lbl_dmd_num, self.edt_dmd_num)
+        flo_dmd_led = QFormLayout()
+        flo_dmd_led.addRow(lbl_dmd_red, self.edt_dmd_red)
+        flo_dmd_led.addRow(lbl_dmd_green, self.edt_dmd_green)
+        flo_dmd_led.addRow(lbl_dmd_blue, self.edt_dmd_blue)
         # Vertical box
         vbox_dmd = QVBoxLayout()
         vbox_dmd.addWidget(self.btn_dmd_roi)
         vbox_dmd.addWidget(self.btn_dmd_reset)
         vbox_dmd.addLayout(flo_dmd)
+        vbox_dmd_led = QVBoxLayout()
+        vbox_dmd_led.addLayout(flo_dmd_led)
         # GroupBox
+        group_dmd_led = QGroupBox("LED Current  (0-255)")
+        group_dmd_led.setLayout(vbox_dmd_led)
+        vbox_dmd.addWidget(group_dmd_led)
+        
         group_dmd = QGroupBox("DMD")
         group_dmd.setLayout(vbox_dmd)
         return group_dmd
@@ -205,19 +231,29 @@ class Window(QMainWindow):
         # lbl_exp = QLabel("Optogenetic Experiment")
         lbl_exp_pre_seq = QLabel("Preactivation Sequence")
         lbl_exp_pre_num = QLabel("Nb. Im.")
-        lbl_exp_pre_exp = QLabel("Exposure")
+        self.lbl_exp_pre_time = QLabel("Time per frame (ms): ")
         lbl_exp_act = QLabel("Activation")
         lbl_exp_pos_seq = QLabel("Postactivation Sequence")
         lbl_exp_pos_num = QLabel("Nb. Im.")
-        lbl_exp_pos_exp = QLabel("Exposure")
+        self.lbl_exp_pos_time = QLabel("Time per frame (ms): ")
         # Checkboxes
         self.chck_exp_pre_seq = QCheckBox()
-        self.chck_exp_pre_num = QCheckBox()
-        self.chck_exp_pre_exp = QCheckBox()
         self.chck_exp_act = QCheckBox()
         self.chck_exp_pos_seq = QCheckBox()
-        self.chck_exp_pos_num = QCheckBox()
-        self.chck_exp_pos_exp = QCheckBox()
+        # Edit lines
+        self.edt_exp_pre_num = QLineEdit()
+        self.edt_exp_pre_num.setValidator(QIntValidator())
+        self.edt_exp_pre_num.setAlignment(Qt.AlignRight)
+        self.edt_exp_pre_num.setMaxLength(4)
+        self.edt_exp_pre_num.setText(str(self.numImages))
+        self.edt_exp_pos_num = QLineEdit()
+        self.edt_exp_pos_num.setValidator(QIntValidator())
+        self.edt_exp_pos_num.setAlignment(Qt.AlignRight)
+        self.edt_exp_pos_num.setMaxLength(4)
+        self.edt_exp_pos_num.setText(str(self.numImages))
+        # Variables 
+        self.exp_pre_time_frame = -1
+        self.exp_pos_time_frame = -1
         # Buttons
         self.btn_exp_start = QPushButton("Launch")
         self.btn_exp_start.clicked.connect(self.launchExperiment)
@@ -232,9 +268,10 @@ class Window(QMainWindow):
         hbox_exp_pre.addWidget(lbl_exp_pre_seq)
         hbox_exp_pre.addWidget(self.chck_exp_pre_seq)
         hbox_exp_pre.addWidget(lbl_exp_pre_num)
-        hbox_exp_pre.addWidget(self.chck_exp_pre_num)
-        hbox_exp_pre.addWidget(lbl_exp_pre_exp)
-        hbox_exp_pre.addWidget(self.chck_exp_pre_exp)
+        hbox_exp_pre.addWidget(self.edt_exp_pre_num)
+        hbox_exp_pre.addStretch()
+        hbox_exp_pre.addWidget(self.lbl_exp_pre_time)
+        hbox_exp_pre.addStretch()
 
         hbox_exp_act.addWidget(lbl_exp_act)
         hbox_exp_act.addWidget(self.chck_exp_act)
@@ -243,9 +280,10 @@ class Window(QMainWindow):
         hbox_exp_pos.addWidget(lbl_exp_pos_seq)
         hbox_exp_pos.addWidget(self.chck_exp_pos_seq)
         hbox_exp_pos.addWidget(lbl_exp_pos_num)
-        hbox_exp_pos.addWidget(self.chck_exp_pos_num)
-        hbox_exp_pos.addWidget(lbl_exp_pos_exp)
-        hbox_exp_pos.addWidget(self.chck_exp_pos_exp)
+        hbox_exp_pos.addWidget(self.edt_exp_pos_num)
+        hbox_exp_pos.addStretch()
+        hbox_exp_pos.addWidget(self.lbl_exp_pos_time)
+        hbox_exp_pos.addStretch()
         # Setting vertical box
         vbox_exp.addStretch()
         # vbox_exp.addWidget(lbl_exp)
@@ -255,7 +293,7 @@ class Window(QMainWindow):
         vbox_exp.addLayout(hbox_exp_act)
         vbox_exp.addLayout(hbox_exp_pos)
         # Groupbox
-        group_exp = QGroupBox("Optogenetic Experiment")
+        group_exp = QGroupBox("Optogenetics Experiment")
         group_exp.setLayout(vbox_exp)
         return group_exp
 
@@ -282,23 +320,6 @@ class Window(QMainWindow):
     def setPatternWindow(self):
         self.vertices = np.zeros((1, 2))
         self.dlp = DLPModel(self.XSize, self.YSize)
-        '''
-        self.vertices = np.zeros((1, 2))
-
-        # secondary window used to show the pattern
-        self.patternScreen = PatternWindow(self.XSize, self.YSize)
-        # window is placed on the secondary desktop screen to be projected
-        pDesktop = QApplication.desktop()
-        RectScreen1 = pDesktop.screenGeometry(1)
-        self.patternScreen.move(RectScreen1.left(), RectScreen1.top())
-        self.patternScreen.resize(RectScreen1.width(), RectScreen1.height())
-        # background of window is set to black
-        palette = self.patternScreen.palette()
-        palette.setColor(self.patternScreen.backgroundRole(), Qt.black)
-        self.patternScreen.setPalette(palette)
-        # pattern is shown
-        self.patternScreen.showMaximized()
-        '''
     def snapImage(self):
         self.cameraModel.snapImage()
         self.img = self.cameraModel.getImage()
@@ -316,7 +337,56 @@ class Window(QMainWindow):
         self.displayImage()
 
     def launchExperiment(self):
-        activationDone = self.dlp.startActivation()
+        self.isAcquisitionDone = False
+        self.isActivationDone = False
+        ### PRE ACTIVATION AQUISITION
+        if self.chck_exp_pre_seq.isChecked():
+            print "Performing first acquisition"
+            self.exposureTime = int(self.edt_cam_exp.text())
+            self.numImages = int(self.edt_exp_pre_num.text())
+            self.cameraModel.setExposureTime(self.exposureTime)
+            self.cameraModel.setNumImages(self.numImages)
+            self.cameraModel.startSequenceAcquisition()
+            if self.cameraModel.isAcquisitionDone():
+                self.isAcquisitionDone = True
+                self.exp_pre_time_frame = self.cameraModel.getTimePerFrame()
+                self.lbl_exp_pre_time.setText("Time per frame: %f (s)" % self.exp_pre_time_frame)
+                
+        ### ACTIVATION
+        #'''
+        #↕'''
+        '''
+        if self.chck_exp_act.isChecked() and self.chck_exp_pre_seq.isChecked():     
+            if self.cameraModel.isAcquisitionDone():
+                self.dlp.startActivation()
+                self.isActivationDone = dlp.isActivationDone()
+        '''
+        if self.chck_exp_act.isChecked():
+            print "Performing activation"
+            self.irradiationPeriod = int(self.edt_dmd_iper.text())
+            self.pulseDuration = int(self.edt_dmd_pulse.text())
+            self.numPeriods = int(self.edt_dmd_num.text())
+            self.red = int(self.edt_dmd_red.text())
+            self.green = int(self.edt_dmd_green.text())
+            self.blue = int(self.edt_dmd_blue.text())
+            self.dlp.setIrradiationPeriod(self.irradiationPeriod)
+            self.dlp.setPulseDuration(self.pulseDuration)
+            self.dlp.setNumPeriods(self.numPeriods)
+            self.dlp.setRGB(self.red, self.green, self.blue)
+            self.dlp.startActivation()
+            self.isActivationDone = self.dlp.isActivationDone()
+        
+        ### POST ACTIVATION AQUISITION
+        if self.chck_exp_pos_seq.isChecked():
+            print "Performing second acquisition"
+            self.numImages = int(self.edt_exp_pos_num.text())
+            self.cameraModel.setNumImages(self.numImages)
+            self.cameraModel.startSequenceAcquisition()
+            if self.cameraModel.isAcquisitionDone():
+                self.isAcquisitionDone = True
+                self.exp_pos_time_frame = self.cameraModel.getTimePerFrame()
+                self.lbl_exp_pos_time.setText("Time per frame: %f (s)" % self.exp_pos_time_frame)
+                self.successfulExperiment()
 
     # Fills the selected area in the secondary window
     def setPattern(self):
@@ -350,12 +420,19 @@ class Window(QMainWindow):
         self.cameraModel.startSequenceAcquisition()
         if self.cameraModel.isAcquisitionDone():
             self.successfulAcquisition()
+            self.isAcquisitionDone = True
         #self.cameraModel.resetCore()
 
     # Displays a pop-up indicating that the acquisition was successful
     def successfulAcquisition(self):
         choice = QMessageBox.information(self, 'Successful Acquisition',
                                          "Your file has been saved correctly",
+                                         QMessageBox.Ok, QMessageBox.Ok)
+        
+    # Displays a pop-up indicating that the experiment was successful
+    def successfulExperiment(self):
+        choice = QMessageBox.information(self, 'Successful Experiment',
+                                         "Your files have been saved correctly",
                                          QMessageBox.Ok, QMessageBox.Ok)
 
     # Retrieves the values from GUI and sets a new ROI
