@@ -36,8 +36,8 @@ class DLPModel:
         self.patternScreen.setPalette(palette)
         # pattern is shown
         self.patternScreen.showMaximized()
-        #pycrafter4500.video_mode()
-        #pycrafter4500.stop_display()
+        pycrafter4500.video_mode()
+        pycrafter4500.stop_display()
         
     def setIrradiationPeriod(self, irradiationPeriod):
         self.irradiationPeriod = irradiationPeriod
@@ -92,7 +92,6 @@ class DLPModel:
             pycrafter4500.start_display(self.RGB)
             time.sleep(self.pulseDuration * 0.001)
             pycrafter4500.stop_display()
-            #self.resetPattern()
             time.sleep(darkTime * 0.001)
         self.activationDone = True    
     
@@ -105,10 +104,8 @@ if __name__ == '__main__':
     print 'you can start your acquisition'
     #screen.startActivation()
     '''
-    #dlp.patternScreen.plot()
-    #pycrafter4500.start_display([104, 135, 130])
-    #canvas = dlp.patternScreen.figure.canvas
-    #mplimage = np.fromstring(canvas.tostring_rgb(), dtype='uint8').reshape(2048, 2048, 3)
-    #gray_image = color.rgb2gray(mplimage)
+    dlp.patternScreen.plot()
+    pycrafter4500.start_display([104, 135, 130])
+    canvas = dlp.patternScreen.figure.canvas
     #plt.figure()
     #plt.imshow(gray_image, cmap='gray')
