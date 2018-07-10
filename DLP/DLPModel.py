@@ -18,7 +18,7 @@ class DLPModel:
         self.irradiationPeriod = 2000
         self.pulseDuration = 1000
         self.numPeriods = 1
-        self.RGB = [104, 135, 130] # Default values obtained in the manual
+        self.RGB = [104, 135, 130] # Default values obtained from the manual
         self.XSize = XSize
         self.YSize = YSize
         self.vertices = np.zeros((1, 2))
@@ -27,7 +27,7 @@ class DLPModel:
         self.patternScreen = PatternWindow(self.XSize, self.YSize)
         # window is placed on the secondary desktop screen to be projected
         pDesktop = QApplication.desktop()
-        RectScreen1 = pDesktop.screenGeometry(1)
+        RectScreen1 = pDesktop.screenGeometry(0)
         self.patternScreen.move(RectScreen1.left(), RectScreen1.top())
         self.patternScreen.resize(RectScreen1.width(), RectScreen1.height())
         # background of window is set to black
@@ -36,9 +36,8 @@ class DLPModel:
         self.patternScreen.setPalette(palette)
         # pattern is shown
         self.patternScreen.showMaximized()
-        #pycrafter4500.software_reset()
-        pycrafter4500.video_mode()
-        pycrafter4500.stop_display()
+        #pycrafter4500.video_mode()
+        #pycrafter4500.stop_display()
         
     def setIrradiationPeriod(self, irradiationPeriod):
         self.irradiationPeriod = irradiationPeriod
@@ -106,9 +105,9 @@ if __name__ == '__main__':
     print 'you can start your acquisition'
     #screen.startActivation()
     '''
-    dlp.patternScreen.plot()
-    pycrafter4500.start_display([104, 135, 130])
-    canvas = dlp.patternScreen.figure.canvas
+    #dlp.patternScreen.plot()
+    #pycrafter4500.start_display([104, 135, 130])
+    #canvas = dlp.patternScreen.figure.canvas
     #mplimage = np.fromstring(canvas.tostring_rgb(), dtype='uint8').reshape(2048, 2048, 3)
     #gray_image = color.rgb2gray(mplimage)
     #plt.figure()

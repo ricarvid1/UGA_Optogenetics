@@ -13,6 +13,7 @@ import time
 from PIL import Image
 import os
 
+
 def checkfile(path):
      path      = os.path.expanduser(path)
 
@@ -38,9 +39,9 @@ class AcquisitionModel:
         # loading camera
         self.mmc = MMCorePy.CMMCore()
         self.mmc.getVersionInfo()
-        # self.mmc.loadDevice('Camera', 'DemoCamera', 'DCam')
+        self.mmc.loadDevice('Camera', 'DemoCamera', 'DCam')
         # Hamamatsu
-        self.mmc.loadDevice('Camera', 'HamamatsuHam', 'HamamatsuHam_DCAM')
+        #self.mmc.loadDevice('Camera', 'HamamatsuHam', 'HamamatsuHam_DCAM')
         self.mmc.initializeAllDevices()
         self.mmc.setCameraDevice('Camera')
         self.mmc.setCircularBufferMemoryFootprint(1024)  # Buffer siwe is set to 1Gb acquisitions with mqny frames
