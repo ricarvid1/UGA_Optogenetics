@@ -31,7 +31,7 @@ class PatternWindow(QWidget):
         self.setYSize(YSize)
         self.background = np.zeros((self.XSize, self.YSize))
         self.ax.imshow(self.background, cmap='gray')
-
+        self.createCalibrationPattern()
         # set the layout
         layout = QVBoxLayout()
         layout.addWidget(self.canvas)
@@ -60,6 +60,45 @@ class PatternWindow(QWidget):
 
     def getAxis(self):
         return self.ax
+    
+    # Creates the calibration pattern
+    def createCalibrationPattern(self):
+        # A pattern in plotted
+        # A circle is plotted
+        xCenter = self.XSize / 2
+        yCenter = self.YSize / 4
+        radius = 3
+        self.calibrationPattern1 = self.background[:, (self.YSize / 2):]
+        #'''
+        for i in range(self.XSize):
+            for j in range(self.YSize / 2):
+                d = np.sqrt((i - xCenter)**2 + (j - yCenter)**2)
+                if d <= radius:
+                    self.calibrationPattern1[i, j] = 1
+        #'''
+        self.calibrationPattern1 = np.tile(self.calibrationPattern1, 2)
+        self.calibrationPattern2 = np.rot90(self.calibrationPattern1)
+
+        
+    # displays the calibration pattern
+    def showCalibrationPattern1(self):
+        # data (matrix) is displayed like an image
+        self.ax.clear()
+        self.ax.imshow(self.calibrationPattern1, cmap='gray')
+        # refresh canvas
+        self.canvas.draw_idle()
+#        plt.figure()
+#        plt.imshow(self.calibrationPattern1, cmap='gray')
+        
+    # displays the calibration pattern
+    def showCalibrationPattern2(self):
+        # data (matrix) is displayed like an image
+        self.ax.clear()
+        self.ax.imshow(self.calibrationPattern2, cmap='gray')
+        # refresh canvas
+        self.canvas.draw_idle()
+#        plt.figure()
+#        plt.imshow(self.calibrationPattern2, cmap='gray')
 
     # Generates a circle pattern and plots it on the window
     def plot(self):
@@ -86,11 +125,12 @@ class PatternWindow(QWidget):
         self.ax.imshow(circle, cmap='gray')
         # refresh canvas
         self.canvas.draw_idle()
-        plt.figure()
-        plt.imshow(circle, cmap='gray')
+        #plt.figure()
+        #plt.imshow(circle, cmap='gray')
 
     # Resets the pattern on the window to a black screen
     def reset(self):
+        self.background = np.zeros((self.XSize, self.YSize))
         self.ax.clear()
         self.ax.imshow(self.background, cmap='gray')
         self.canvas.draw_idle()
