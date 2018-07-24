@@ -1,566 +1,201 @@
+# -*- coding: utf-8 -*-
+from PatternWindow import PatternWindow
 import sys
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
-import matplotlib.pyplot as plt
 import numpy as np
-from AcquisitionModel import AcquisitionModel
-from DLP.PatternWindow import PatternWindow
-from DLP.DLPModel import DLPModel
+import matplotlib.pyplot as plt
+import pycrafter4500_Irene as pycrafter4500
 import time
 
+class DLPModel:
 
-class Window(QMainWindow):
 
-    def __init__(self):
-        super(Window, self).__init__()
-        self.setGeometry(100, 200, 900, 650)
-        self.setWindowTitle('TIRF Experiment Manager')
-        self.setWindowIcon(QIcon('logo_LIPhy.png'))
-        self.cameraModel = AcquisitionModel()
-        self.home()
-
-    def home(self):
-        # central widget is created
-        self.central = QWidget()
-        self.setCentralWidget(self.central)
-        # Left Section
-        # Left boxes are added here
-        vbox_main = QVBoxLayout()
-
-        # Adding elements to the left main box
-        vbox_main.addStretch()
-        vbox_main.addWidget(self.setCamHome())
-        vbox_main.addStretch()
-        vbox_main.addWidget(self.setROIHome())
-        vbox_main.addStretch()
-        vbox_main.addWidget(self.setDMDHome())
-        vbox_main.addStretch()
-
-        # Right main Section
-        #Main right VBox
-        vbox_main_exp = QVBoxLayout()
-        vbox_main_exp.addWidget(self.setGraphHome())
-        vbox_main_exp.addStretch()
-        vbox_main_exp.addWidget(self.setExpHome())
-
-        # Secondary window
-        self.setPatternWindow()
-
-        #Main HBOX containing all subelements
-        hbox_main = QHBoxLayout()
-        hbox_main.addLayout(vbox_main)
-        hbox_main.addStretch()
-        hbox_main.addLayout(vbox_main_exp)
-        self.central.setLayout(hbox_main)
-        
-        #Status bar
-        self.statusBar = QStatusBar()
-        self.setStatusBar(self.statusBar)
-        self.statusBar.showMessage("Init done.")
-        # Showing all the graphs
-        self.show()
-
-    def setCamHome(self):
-        # Camera section is added using the grid option
-        # Variables
-        self.isAcquisitionDone = False
-        # Labels
-        # lbl_cam = QLabel("Camera")
-        lbl_cam_exp = QLabel("Exposure Time (ms)")
-        lbl_cam_num = QLabel("Number of Im. ")
-        lbl_cam_inter = QLabel("Interval (ms)")
-        # Edit lines
-        self.exposureTime = 10
-        self.edt_cam_exp = QLineEdit()
-        self.edt_cam_exp.setValidator(QIntValidator(1, 5000))
-        self.edt_cam_exp.setAlignment(Qt.AlignRight)
-        self.edt_cam_exp.setMaxLength(4)
-        self.edt_cam_exp.setText(str(self.exposureTime))
-        self.numImages = 1
-        self.edt_cam_num = QLineEdit()
-        self.edt_cam_num.setValidator(QIntValidator(1, 1000))
-        self.edt_cam_num.setAlignment(Qt.AlignRight)
-        self.edt_cam_num.setMaxLength(4)
-        self.edt_cam_num.setText(str(self.numImages))
-        self.edt_cam_inter = QLineEdit()
-        self.edt_cam_inter.setValidator(QIntValidator(10, 99999))
-        self.edt_cam_inter.setAlignment(Qt.AlignRight)
-        self.edt_cam_inter.setMaxLength(5)
-        self.edt_cam_inter.setText('10')
-        # Buttons
-        self.btn_cam_snap = QPushButton("Capture Image")
-        self.btn_cam_acq = QPushButton("Acquire")
-        self.btn_cam_snap.clicked.connect(self.captureImage)
-        self.btn_cam_acq.clicked.connect(self.startSequenceAcquisition)
-        # grid
-        grid_cam = QGridLayout()
-        # grid_cam.addWidget(lbl_cam, 0, 0, 1, 1)
-        grid_cam.addWidget(lbl_cam_exp, 1, 0, 1, 1)
-        grid_cam.addWidget(self.edt_cam_exp, 1, 1, 1, 1)
-        grid_cam.addWidget(self.btn_cam_snap, 2, 0, 1, 2)
-        grid_cam.addWidget(lbl_cam_num, 3, 0, 1, 1)
-        grid_cam.addWidget(self.edt_cam_num, 3, 1, 1, 1)
-        grid_cam.addWidget(lbl_cam_inter, 4, 0, 1, 1)
-        grid_cam.addWidget(self.edt_cam_inter, 4, 1, 1, 1)
-        grid_cam.addWidget(self.btn_cam_acq, 5, 0, 1, 2)
-        # GroupBox
-        group_cam = QGroupBox("Camera")
-        group_cam.setLayout(grid_cam)
-        return group_cam
-
-    def setROIHome(self):
-        # Camera section is added using the grid option
-        # Variables
+    def __init__(self, XSize, YSize):
+        self.irradiationPeriod = 2000
+        self.pulseDuration = 1000
+        self.numPeriods = 1
+        self.RGB = [104, 135, 130] # Default values obtained in the manual
+        self.XSize = XSize
+        self.YSize = YSize
+        self.distX = self.XSize / 2
+        self.distY = self.YSize / 2
         self.vertices = np.zeros((1, 2))
-        # Labels
-        # lbl_cam = QLabel("Camera")
-        lbl_roi_x = QLabel("X Coordinate")
-        lbl_roi_y = QLabel("Y Coordinate")
-        lbl_roi_width = QLabel("ROI Width")
-        lbl_roi_height = QLabel("ROI Height")
-        # Edit lines
-        self.XSize = self.cameraModel.getXSize()    # Original size of camera's image (without ROI)
-        self.YSize = self.cameraModel.getYSize()    # Original size of camera's image (without ROI)
-        self.edt_roi_x = QLineEdit()
-        self.edt_roi_x.setValidator(QIntValidator(0, self.XSize))
-        self.edt_roi_x.setAlignment(Qt.AlignRight)
-        self.edt_roi_x.setMaxLength(4)
-        self.edt_roi_x.setText('0')
-        self.edt_roi_y = QLineEdit()
-        self.edt_roi_y.setValidator(QIntValidator(0, self.YSize))
-        self.edt_roi_y.setAlignment(Qt.AlignRight)
-        self.edt_roi_y.setMaxLength(4)
-        self.edt_roi_y.setText('0')
-        self.edt_roi_width = QLineEdit()
-        self.edt_roi_width.setValidator(QIntValidator(0, self.XSize))
-        self.edt_roi_width.setAlignment(Qt.AlignRight)
-        self.edt_roi_width.setMaxLength(4)
-        self.edt_roi_width.setText(str(self.XSize))
-        self.edt_roi_height = QLineEdit()
-        self.edt_roi_height.setValidator(QIntValidator(0, self.YSize))
-        self.edt_roi_height.setAlignment(Qt.AlignRight)
-        self.edt_roi_height.setMaxLength(4)
-        self.edt_roi_height.setText(str(self.YSize))
-        # Buttons
-        self.btn_roi_set = QPushButton("Set Acquisition ROI")
-        self.btn_roi_set.clicked.connect(self.setROIAcquisition)
-        self.btn_roi_reset = QPushButton("Reset")
-        self.btn_roi_reset.clicked.connect(self.resetROIAcquisition)
-        # Form layout
-        flo_roi = QFormLayout()
-        flo_roi.addRow(lbl_roi_x, self.edt_roi_x)
-        flo_roi.addRow(lbl_roi_y, self.edt_roi_y)
-        flo_roi.addRow(lbl_roi_width, self.edt_roi_width)
-        flo_roi.addRow(lbl_roi_height, self.edt_roi_height)
-        # Vertical box
-        vbox_roi = QVBoxLayout()
-        vbox_roi.addLayout(flo_roi)
-        vbox_roi.addWidget(self.btn_roi_set)
-        vbox_roi.addWidget(self.btn_roi_reset)
-        # GroupBox
-        group_roi = QGroupBox("ROI")
-        group_roi.setLayout(vbox_roi)
-        return group_roi
-
-    def setDMDHome(self):
-        # DMD section is added using the form option
-        # Variables
-        self.isActivationDone = False
-        # Labels
-        # lbl_dmd = QLabel("DMD")
-        lbl_dmd_iper = QLabel("Irradiation Period (ms)")
-        lbl_dmd_pulse = QLabel("Pulse Duration (ms)")
-        lbl_dmd_num = QLabel("Number of Periods")
-        #♦lbl_dmd_led = QLabel("LED Current  (0-255)")
-        lbl_dmd_red = QLabel("Red")
-        lbl_dmd_green = QLabel("Green")
-        lbl_dmd_blue = QLabel("Blue")
-        # Edit lines
-        self.edt_dmd_pulse = QLineEdit()
-        self.edt_dmd_pulse.setValidator(QIntValidator(50, 5000))
-        self.edt_dmd_pulse.setAlignment(Qt.AlignRight)
-        self.edt_dmd_pulse.setMaxLength(4)
-        self.edt_dmd_pulse.setText('50')
-        self.edt_dmd_iper = QLineEdit()
-        self.edt_dmd_iper.setValidator(QIntValidator(50, 5000))
-        self.edt_dmd_iper.setAlignment(Qt.AlignRight)
-        self.edt_dmd_iper.setMaxLength(4)
-        self.edt_dmd_iper.setText('50')
-        self.edt_dmd_num = QLineEdit()
-        self.edt_dmd_num.setValidator(QIntValidator(1, 20))
-        self.edt_dmd_num.setAlignment(Qt.AlignRight)
-        self.edt_dmd_num.setMaxLength(4)
-        self.edt_dmd_num.setText('1')
-        self.edt_dmd_red = QLineEdit()
-        self.edt_dmd_red.setValidator(QIntValidator(0, 255))
-        self.edt_dmd_red.setAlignment(Qt.AlignRight)
-        self.edt_dmd_red.setMaxLength(3)
-        self.edt_dmd_red.setText('104')
-        self.edt_dmd_green = QLineEdit()
-        self.edt_dmd_green.setValidator(QIntValidator(0, 255))
-        self.edt_dmd_green.setAlignment(Qt.AlignRight)
-        self.edt_dmd_green.setMaxLength(3)
-        self.edt_dmd_green.setText('135')
-        self.edt_dmd_blue = QLineEdit()
-        self.edt_dmd_blue.setValidator(QIntValidator(0, 255))
-        self.edt_dmd_blue.setAlignment(Qt.AlignRight)
-        self.edt_dmd_blue.setMaxLength(3)
-        self.edt_dmd_blue.setText('130')
-        # Buttons
-        self.btn_dmd_roi = QPushButton("Set Activation ROI")
-        self.btn_dmd_roi.clicked.connect(self.setPattern)
-        self.btn_dmd_reset = QPushButton("Reset Activation ROI")
-        self.btn_dmd_reset.clicked.connect(self.resetPattern)
-        # Form layout
-        flo_dmd = QFormLayout()
-        flo_dmd.addRow(lbl_dmd_pulse, self.edt_dmd_pulse)
-        flo_dmd.addRow(lbl_dmd_iper, self.edt_dmd_iper)
-        flo_dmd.addRow(lbl_dmd_num, self.edt_dmd_num)
-        flo_dmd_led = QFormLayout()
-        flo_dmd_led.addRow(lbl_dmd_red, self.edt_dmd_red)
-        flo_dmd_led.addRow(lbl_dmd_green, self.edt_dmd_green)
-        flo_dmd_led.addRow(lbl_dmd_blue, self.edt_dmd_blue)
-        # Vertical box
-        vbox_dmd = QVBoxLayout()
-        vbox_dmd.addWidget(self.btn_dmd_roi)
-        vbox_dmd.addWidget(self.btn_dmd_reset)
-        vbox_dmd.addLayout(flo_dmd)
-        vbox_dmd_led = QVBoxLayout()
-        vbox_dmd_led.addLayout(flo_dmd_led)
-        # GroupBox
-        group_dmd_led = QGroupBox("LED Current  (0-255)")
-        group_dmd_led.setLayout(vbox_dmd_led)
-        vbox_dmd.addWidget(group_dmd_led)
-        
-        group_dmd = QGroupBox("DMD")
-        group_dmd.setLayout(vbox_dmd)
-        return group_dmd
-
-    def setExpHome(self):
-        # Optogenetic Experiment section
-        # Variables
+        self.activationDone = False
         self.stopFlag = False
-        # Labels
-        # lbl_exp = QLabel("Optogenetic Experiment")
-        lbl_exp_pre_seq = QLabel("Preactivation Sequence")
-        lbl_exp_pre_num = QLabel("Nb. Im.")
-        self.lbl_exp_pre_time = QLabel("Time per frame (ms): ")
-        lbl_exp_act = QLabel("Activation")
-        lbl_exp_pos_seq = QLabel("Postactivation Sequence")
-        lbl_exp_pos_num = QLabel("Nb. Im.")
-        self.lbl_exp_pos_time = QLabel("Time per frame (ms): ")
-        # Checkboxes
-        self.chck_exp_pre_seq = QCheckBox()
-        self.chck_exp_act = QCheckBox()
-        self.chck_exp_pos_seq = QCheckBox()
-        # Edit lines
-        self.edt_exp_pre_num = QLineEdit()
-        self.edt_exp_pre_num.setValidator(QIntValidator())
-        self.edt_exp_pre_num.setAlignment(Qt.AlignRight)
-        self.edt_exp_pre_num.setMaxLength(4)
-        self.edt_exp_pre_num.setText(str(self.numImages))
-        self.edt_exp_pos_num = QLineEdit()
-        self.edt_exp_pos_num.setValidator(QIntValidator())
-        self.edt_exp_pos_num.setAlignment(Qt.AlignRight)
-        self.edt_exp_pos_num.setMaxLength(4)
-        self.edt_exp_pos_num.setText(str(self.numImages))
-        # Variables 
-        self.exp_pre_time_frame = -1
-        self.exp_pos_time_frame = -1
-        # Buttons
-        self.btn_exp_calib = QPushButton("Do Calibration")
-        self.btn_exp_calib.clicked.connect(self.doCalibration)
-        self.btn_exp_start = QPushButton("Launch")
-        self.btn_exp_start.clicked.connect(self.launchExperiment)
-        self.btn_exp_stop = QPushButton("Stop")
-        self.btn_exp_stop.clicked.connect(self.stopExperiment)
-        # Hboxes EXP
-        hbox_exp_pre = QHBoxLayout()
-        hbox_exp_pos = QHBoxLayout()
-        hbox_exp_act = QHBoxLayout()
-        # Vboxes EXP
-        vbox_exp = QVBoxLayout()
-        # Setting horizontal boxes
-        hbox_exp_pre.addWidget(lbl_exp_pre_seq)
-        hbox_exp_pre.addWidget(self.chck_exp_pre_seq)
-        hbox_exp_pre.addWidget(lbl_exp_pre_num)
-        hbox_exp_pre.addWidget(self.edt_exp_pre_num)
-        hbox_exp_pre.addStretch()
-        hbox_exp_pre.addWidget(self.lbl_exp_pre_time)
-        hbox_exp_pre.addStretch()
-
-        hbox_exp_act.addWidget(lbl_exp_act)
-        hbox_exp_act.addWidget(self.chck_exp_act)
-        hbox_exp_act.addStretch()
-
-        hbox_exp_pos.addWidget(lbl_exp_pos_seq)
-        hbox_exp_pos.addWidget(self.chck_exp_pos_seq)
-        hbox_exp_pos.addWidget(lbl_exp_pos_num)
-        hbox_exp_pos.addWidget(self.edt_exp_pos_num)
-        hbox_exp_pos.addStretch()
-        hbox_exp_pos.addWidget(self.lbl_exp_pos_time)
-        hbox_exp_pos.addStretch()
-        # Setting vertical box
-        vbox_exp.addStretch()
-        # vbox_exp.addWidget(lbl_exp)
-        vbox_exp.addWidget(self.btn_exp_calib)
-        vbox_exp.addWidget(self.btn_exp_start)
-        vbox_exp.addWidget(self.btn_exp_stop)
-        vbox_exp.addLayout(hbox_exp_pre)
-        vbox_exp.addLayout(hbox_exp_act)
-        vbox_exp.addLayout(hbox_exp_pos)
-        # Groupbox
-        group_exp = QGroupBox("Optogenetics Experiment")
-        group_exp.setLayout(vbox_exp)
-        return group_exp
-
-    def setGraphHome(self):
-        # Graph section to be located on top of the EXP section
-        fig = Figure()
-        self.ax = fig.add_subplot(111)
-        self.graph = FigureCanvas(fig)
-        self.captureImage()
-        # Setting event handling
-        cid_dmd_region = self.graph.mpl_connect('button_press_event', self.selectPatternFromGraph)
-        # Navigation widget
-        # it takes the Canvas widget and a parent
-        toolbar = NavigationToolbar(self.graph, self)
-        # Graph Vbox
-        vbox_graph = QVBoxLayout()
-        vbox_graph.addWidget(toolbar)
-        vbox_graph.addWidget(self.graph)
-        # Groupbox
-        group_graph = QGroupBox("Image Display")
-        group_graph.setLayout(vbox_graph)
-        return group_graph
-
-    def setPatternWindow(self):
-        #self.vertices = np.zeros((1, 2))
-        self.dlp = DLPModel(self.XSize, self.YSize)
+        # secondary window used to show the pattern
+        self.patternScreen = PatternWindow(self.XSize, self.YSize)
+        # window is placed on the secondary desktop screen to be projected
+        pDesktop = QApplication.desktop()
+        RectScreen1 = pDesktop.screenGeometry(1)
+        self.patternScreen.move(RectScreen1.left(), RectScreen1.top())
+        self.patternScreen.resize(RectScreen1.width(), RectScreen1.height())
+        # background of window is set to black
+        palette = self.patternScreen.palette()
+        palette.setColor(self.patternScreen.backgroundRole(), Qt.black)
+        self.patternScreen.setPalette(palette)
+        # pattern is shown
+        self.patternScreen.showMaximized()
+        self.dlp=pycrafter4500.dmd()
+        OK = self.dlp.checkstatus1()
+        self.dlp.checkstatus2()
+        self.dlp.setVideoMode()
+        self.dlp.controlLED(self.RGB)
+        self.dlp.enableLEDs([0, 0, 0])
+        self.DMDPoints = np.array([[self.XSize / 2, self.XSize / 2, self.YSize / 4, self.YSize * 3 / 4],
+                                   [self.YSize / 4, self.YSize * 3 / 4, self.YSize / 2, self.YSize / 2]])
+        self.thetaCam = 0
+        self.rotation = np.array([[1, 0], [0, 1]])
+        self.shiftCam = np.array([[0], [0]])
+        self.magX = 1
+        self.magY = 1
+        self.mag = np.array([[self.magX], [self.magY]])
+        #rotation and shift introduced in order to compensate the optics inversion
+        #given by an odd number of converging lenses
+        self.rotationOptics = np.array([[-1, 0], [0, -1]])
+        self.shiftOptics = np.array([[self.XSize], [self.YSize]])
+        #shift introduced to take points to the origin and demagnify them
+        self.shiftCentering = np.array([[self.distX], [self.distY]])
         
-    def snapImage(self):
-        self.cameraModel.snapImage()
-        self.img = self.cameraModel.getImage()
-
-    def displayImage(self):
-        self.ax.clear()
-        self.ax.imshow(self.img, cmap='gray')
-        if len(self.vertices) > 1:
-            self.ax.scatter(self.vertices[1:, 0], self.vertices[1:, 1], color='red', marker='o')
-        #self.graph.draw_idle()
-        self.graph.draw()
-
-    # Captures an image with the desired exposure Time and displays it
-    def captureImage(self):
-        self.exposureTime = int(self.edt_cam_exp.text())
-        self.cameraModel.setExposureTime(self.exposureTime)
-        self.snapImage()
-        self.displayImage()
-        
-    def doCalibration(self):
-        self.dlp.showCalibrationPattern1()
-        self.figCalibration = plt.figure()
-        self.axCalibration = self.figCalibration.add_subplot(111)
-        self.axCalibration.clear()
-        self.snapImage()
-        self.axCalibration.imshow(self.img, cmap='gray')
-        cid_calib = self.figCalibration.canvas.mpl_connect('button_press_event', self.selectCalibrationPoints)
-        self.calibrationPoints = np.zeros((1, 2))
-        self.counter = 0
-        self.statusBar.showMessage("Performing calibration...")
-        
-    # Testing event handling
-    def selectCalibrationPoints(self, event):
-        
-        if event.inaxes == self.axCalibration:
-            self.counter += 1
-            coordinates = np.array([[event.xdata, event.ydata]])
-            self.calibrationPoints = np.append(self.calibrationPoints, coordinates, axis=0)
-            if self.counter <= 2:
-                self.axCalibration.scatter(self.calibrationPoints[1:, 0], self.calibrationPoints[1:, 1], color='red', marker='o')
-            
-            if self.counter == 2:
-                self.dlp.showCalibrationPattern2()
-                self.snapImage()
-                self.axCalibration.clear()
-                self.axCalibration.imshow(self.img, cmap='gray')
-                
-            if event.inaxes == self.axCalibration and self.counter >= 2:
-                self.axCalibration.scatter(self.calibrationPoints[3:, 0], self.calibrationPoints[3:, 1], color='red', marker='o')
-
-            self.figCalibration.canvas.draw_idle()
-            if self.counter == 4:
-                self.dlp.getCalibrationParameters(self.calibrationPoints[1:, :])
-                self.dlp.resetSecondaryScreen()
-                plt.close(self.figCalibration)
-                self.statusBar.showMessage("Calibration done.")
-        
-
-    def launchExperiment(self):
-        self.isAcquisitionDone = False
-        self.isActivationDone = False
-        self.stopFlag = False
-        self.cameraModel.setStopFlag(self.stopFlag)
-        self.dlp.setStopFlag(self.stopFlag)
-        ### PRE ACTIVATION AQUISITION
-        if self.chck_exp_pre_seq.isChecked() and not self.stopFlag:
-            print "Performing first acquisition"
-            self.statusBar.showMessage("Performing first acquisition...")
-            self.exposureTime = int(self.edt_cam_exp.text())
-            self.numImages = int(self.edt_exp_pre_num.text())
-            self.intervalMs = int(self.edt_cam_inter.text())
-            self.cameraModel.setExposureTime(self.exposureTime)
-            self.cameraModel.setNumImages(self.numImages)
-            self.cameraModel.setIntervalMs(self.intervalMs)
-            self.cameraModel.startSequenceAcquisition()
-            if self.cameraModel.isAcquisitionDone():
-                self.isAcquisitionDone = True
-                self.exp_pre_time_frame = self.cameraModel.getTimePerFrame()
-                self.lbl_exp_pre_time.setText("Time per frame: %f (ms)" % self.exp_pre_time_frame)
-                
-        ### ACTIVATION
-        #'''
-        #↕'''
-        '''
-        if self.chck_exp_act.isChecked() and self.chck_exp_pre_seq.isChecked():     
-            if self.cameraModel.isAcquisitionDone():
-                self.dlp.startActivation()
-                self.isActivationDone = dlp.isActivationDone()
-        '''
-        if self.chck_exp_act.isChecked() and not self.stopFlag:
-            print "Performing activation"
-            self.statusBar.showMessage("Performing activation...")
-            self.pulseDuration = int(self.edt_dmd_pulse.text())
-            self.irradiationPeriod = int(self.edt_dmd_iper.text())
-            if self.irradiationPeriod < self.pulseDuration:
-                self.irradiationPeriod = self.pulseDuration
-                self.edt_dmd_iper.setText(str(self.irradiationPeriod))
-            self.numPeriods = int(self.edt_dmd_num.text())
-            self.red = int(self.edt_dmd_red.text())
-            self.green = int(self.edt_dmd_green.text())
-            self.blue = int(self.edt_dmd_blue.text())
-            self.dlp.setIrradiationPeriod(self.irradiationPeriod)
-            self.dlp.setPulseDuration(self.pulseDuration)
-            self.dlp.setNumPeriods(self.numPeriods)
-            self.dlp.setRGB(self.red, self.green, self.blue)
-            self.dlp.startActivation()
-            app.processEvents()
-            self.captureImage()
-            self.isActivationDone = self.dlp.isActivationDone()
-        
-        ### POST ACTIVATION AQUISITION
-        if self.chck_exp_pos_seq.isChecked() and not self.stopFlag:
-            print "Performing second acquisition"
-            self.statusBar.showMessage("Performing second acquisition...")
-            self.exposureTime = int(self.edt_cam_exp.text())
-            self.numImages = int(self.edt_exp_pos_num.text())
-            self.intervalMs = int(self.edt_cam_inter.text())
-            self.cameraModel.setExposureTime(self.exposureTime)
-            self.cameraModel.setNumImages(self.numImages)
-            self.cameraModel.setIntervalMs(self.intervalMs)
-            self.cameraModel.startSequenceAcquisition()
-            if self.cameraModel.isAcquisitionDone():
-                self.isAcquisitionDone = True
-                self.exp_pos_time_frame = self.cameraModel.getTimePerFrame()
-                self.lbl_exp_pos_time.setText("Time per frame: %f (ms)" % self.exp_pos_time_frame)
-                self.successfulExperiment()
-        self.statusBar.showMessage("Experiment done.")
+    def setIrradiationPeriod(self, irradiationPeriod):
+        self.irradiationPeriod = irradiationPeriod
     
-    #stops current experiment
-    def stopExperiment(self):
-        self.stopFlag = True
-        self.cameraModel.setStopFlag(self.stopFlag)
-        self.dlp.setStopFlag(self.stopFlag)
-        self.statusBar.showMessage("Experiment stopped.")
-         
-    # Fills the selected area in the secondary window
+    def getIrradiationPeriod(self):
+        return self.irradiationPeriod   
+    
+    def setPulseDuration(self, pulseDuration):
+        self.pulseDuration = pulseDuration
+    
+    def getPulseDuration(self):
+        return self.pulseDuration
+    
+    def setNumPeriods(self, numPeriods):
+        self.numPeriods = numPeriods
+    
+    def getNumPeriods(self):
+        return self.numPeriods
+    
+    def setRGB(self, red, green, blue):
+        self.RGB = [red, green, blue]
+    
+    def getRGB(self):
+        return self.RGB
+
+    def setVertices(self, vertices):
+        self.vertices = vertices
+    
+    def getVertices(self):
+        return self.vertices
+    
+    def setStopFlag(self, stopFlag):
+        self.stopFlag = stopFlag
+    
+    def getStopFlag(self):
+        return self.stopFlag
+
     def setPattern(self):
-        if len(self.vertices) > 3:
-            self.dlp.setVertices(self.vertices[1:, :])
-            self.dlp.setPattern()
-            self.statusBar.showMessage("DMD pattern has been set.")
-            #self.patternScreen.getAxis().fill(self.vertices[1:, 0], self.vertices[1:, 1], "w")
-            #self.patternScreen.getCanvas().draw_idle()
+        self.patternScreen.reset()
+        self.adjustVertices()
+        self.patternScreen.getAxis().fill(self.vertices[:, 0], self.vertices[:, 1], "w")
+        self.patternScreen.getCanvas().draw_idle()
+#        self.dlp.controlLED([0, 200, 200])
+#        self.dlp.enableLEDs([0, 1, 1])
 
-    # Resets the pattern on the secondary window
     def resetPattern(self):
+        self.patternScreen.reset()
         self.vertices = np.zeros((1, 2))
-        self.captureImage()
-        self.dlp.resetPattern()
-        self.statusBar.showMessage("DMD pattern has been reset.")
-
-    # Testing event handling
-    def selectPatternFromGraph(self, event):
-        if event.inaxes == self.ax:
-            coordinates = np.array([[event.xdata, event.ydata]])
-            self.vertices = np.append(self.vertices, coordinates, axis=0)
-            self.ax.scatter(self.vertices[1:, 0], self.vertices[1:, 1], color='red', marker='o')
-            self.graph.draw_idle()
-            self.statusBar.showMessage("Select three or more points.")
-
-    # Interface Controller methods start here
-    # Retrieves values from GUI and start the sequence acquisition
-    def startSequenceAcquisition(self):
-        self.statusBar.showMessage("Performing single acquisition...")
-        self.exposureTime = int(self.edt_cam_exp.text())
-        self.numImages = int(self.edt_cam_num.text())
-        self.intervalMs = int(self.edt_cam_inter.text())
-        self.cameraModel.setExposureTime(self.exposureTime)
-        self.cameraModel.setNumImages(self.numImages)
-        self.cameraModel.setIntervalMs(self.intervalMs)
-        self.cameraModel.startSequenceAcquisition()
-        if self.cameraModel.isAcquisitionDone():
-            self.successfulAcquisition()
-            self.isAcquisitionDone = True
-        self.statusBar.showMessage("Acquisition done.")
-        #self.cameraModel.resetCore()
-
-    # Displays a pop-up indicating that the acquisition was successful
-    def successfulAcquisition(self):
-        choice = QMessageBox.information(self, 'Successful Acquisition',
-                                         "Your file has been saved correctly",
-                                         QMessageBox.Ok, QMessageBox.Ok)
         
-    # Displays a pop-up indicating that the experiment was successful
-    def successfulExperiment(self):
-        choice = QMessageBox.information(self, 'Successful Experiment',
-                                         "Your files have been saved correctly",
-                                         QMessageBox.Ok, QMessageBox.Ok)
+    def resetSecondaryScreen(self):
+        self.patternScreen.reset()
+        self.dlp.enableLEDs([0, 0, 0])
+        
+    def setStandby(self):
+        self.dlp.standby()
+            
+    def setPowerUp(self):
+        self.dlp.wakeup()
+        
+    # displays the calibration pattern
+    def showCalibrationPattern1(self):
+        self.patternScreen.showCalibrationPattern1()
+        self.dlp.enableLEDs([0, 1, 1])
+        
+    # displays the calibration pattern
+    def showCalibrationPattern2(self):
+        self.patternScreen.showCalibrationPattern2()
+        self.dlp.enableLEDs([0, 1, 1])
+        
+    def getCalibrationParameters(self, calibrationPoints):
+        cameraPoints = np.transpose(calibrationPoints)
+#        cameraPoints = cameraPoints - self.shiftCentering
+#        self.DMDPoints = self.DMDPoints - self.shiftCentering     
+        mCamera = (cameraPoints[1, 1] - cameraPoints[1, 0]) / (cameraPoints[0, 1] - cameraPoints[0, 0])
+        self.thetaCam = np.arctan(mCamera)
+        print self.thetaCam * 180 / np.pi
+    
+        self.thetaCam = -1 * self.thetaCam
+    
+        self.rotation = np.array([[np.cos(self.thetaCam), -np.sin(self.thetaCam)], [np.sin(self.thetaCam), np.cos(self.thetaCam)]])
+        rotatedPoints = np.matmul(self.rotation, cameraPoints)
+        
+        self.magX = (rotatedPoints[0, 1] - rotatedPoints[0, 0]) / self.distX
+        self.magY = (rotatedPoints[1, 3] - rotatedPoints[1, 2]) / self.distY
+        self.mag = np.array([[self.magX], [self.magY]])
+        print self.mag
+        
+        scaledPoints = rotatedPoints - self.shiftCentering
+        scaledPoints = scaledPoints / self.mag
+        scaledPoints = scaledPoints + self.shiftCentering
+        
+        shift = scaledPoints - self.DMDPoints
+        self.shiftCam = np.array([[shift[0, 0]], [shift[1, 0]]])
+        print self.shiftCam
+        
+        #shiftedPoints = rotatedPoints - self.shiftCam
+        
+    def adjustVertices(self):
+        newVertices = np.transpose(self.vertices)
+        newVertices = np.matmul(self.rotation, newVertices)
+        newVertices = newVertices - self.shiftCentering
+        newVertices = newVertices / self.mag
+        newVertices = newVertices + self.shiftCentering
+        newVertices = newVertices - self.shiftCam
+        newVertices = np.matmul(self.rotationOptics, newVertices)
+        newVertices = newVertices + self.shiftOptics
+        print newVertices
+        self.vertices = np.transpose(newVertices)
+        
+    def isActivationDone(self):
+        return self.activationDone
 
-    # Retrieves the values from GUI and sets a new ROI
-    def setROIAcquisition(self):
-        x = int(self.edt_roi_x.text())
-        y = int(self.edt_roi_y.text())
-        width = int(self.edt_roi_width.text())
-        if (x + width) > self.XSize:
-            width = self.XSize - x
-            self.edt_roi_width.setText(str(width))
-        height = int(self.edt_roi_height.text())
-        if (y + height) > self.YSize:
-            height = self.YSize - y
-        self.edt_roi_height.setText(str(height))
-        self.cameraModel.setROI(x, y, width, height)
-        self.captureImage()
-
-    # Retrieves the values from GUI and sets a new ROI
-    def resetROIAcquisition(self):
-        self.edt_roi_x.setText('0')
-        self.cameraModel.setX(0)
-        self.edt_roi_y.setText('0')
-        self.cameraModel.setY(0)
-        self.edt_roi_width.setText(str(self.XSize))
-        self.cameraModel.setWidth(self.XSize)
-        self.edt_roi_height.setText(str(self.YSize))
-        self.cameraModel.setHeight(self.YSize)
-        self.cameraModel.mmc.clearROI()
-        self.captureImage()
-
-
+    def startActivation(self):
+        darkTime = self.irradiationPeriod - self.pulseDuration
+        self.dlp.enableLEDs([0, 0, 0])
+        self.dlp.controlLED(self.RGB)
+        time.sleep(0.5)
+        for i in range(self.numPeriods):
+            if self.stopFlag:
+                break
+            self.dlp.enableLEDs([0, 1, 1])
+            time.sleep(self.pulseDuration * 0.001)
+            self.dlp.enableLEDs([0, 0, 0])
+            #self.resetPattern()
+            time.sleep(darkTime * 0.001)
+        self.activationDone = True    
+    
 if __name__ == '__main__':
-    app = QApplication(sys.argv)
-    GUI = Window()
-    sys.exit(app.exec_())
+    DLPController = DLPModel(2048, 2048)
+ 
+#    vertices = np.array([[0, 0], [0, 0], [500, 500], [0, 500]])
+#    DLPController.setVertices(vertices)
+#    DLPController.setRGB(0, 0, 130)
+#    DLPController.setPattern()
+    print 'you can start your acquisition'
+#    DLPController.startActivation()
+    DLPController.showCalibrationPattern2()
+    #gray_image = color.rgb2gray(mplimage)
+    #plt.figure()
+    #plt.imshow(gray_image, cmap='gray')
