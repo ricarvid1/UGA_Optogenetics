@@ -244,11 +244,11 @@ class AcquisitionModel:
 
 if __name__ == "__main__":
     cameraModel = AcquisitionModel()
-    numImages = 10
-    exposureTime = 10
+    numImages = 100
+    exposureTime = 300
     intervalMs = 10
     # print(cameraModel.getXSize())
-    cameraModel.setROI(0, 0, 100, 100)
+    cameraModel.setROI(0, 0, 512, 512)
     cameraModel.setNumImages(numImages)
     cameraModel.setExposureTime(exposureTime)
     cameraModel.setIntervalMs(intervalMs)
