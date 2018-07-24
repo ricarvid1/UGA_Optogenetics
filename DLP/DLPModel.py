@@ -101,8 +101,8 @@ class DLPModel:
         self.adjustVertices()
         self.patternScreen.getAxis().fill(self.vertices[:, 0], self.vertices[:, 1], "w")
         self.patternScreen.getCanvas().draw_idle()
-        self.dlp.controlLED([0, 100, 100])
-        self.dlp.enableLEDs([0, 1, 1])
+#        self.dlp.controlLED([0, 200, 200])
+#        self.dlp.enableLEDs([0, 1, 1])
 
     def resetPattern(self):
         self.patternScreen.reset()
@@ -130,6 +130,8 @@ class DLPModel:
         
     def getCalibrationParameters(self, calibrationPoints):
         cameraPoints = np.transpose(calibrationPoints)
+#        cameraPoints = cameraPoints - self.shiftCentering
+#        self.DMDPoints = self.DMDPoints - self.shiftCentering     
         mCamera = (cameraPoints[1, 1] - cameraPoints[1, 0]) / (cameraPoints[0, 1] - cameraPoints[0, 0])
         self.thetaCam = np.arctan(mCamera)
         print self.thetaCam * 180 / np.pi
@@ -143,8 +145,11 @@ class DLPModel:
         self.magY = (rotatedPoints[1, 3] - rotatedPoints[1, 2]) / self.distY
         self.mag = np.array([[self.magX], [self.magY]])
         print self.mag
-        scaledPoints = rotatedPoints / self.mag
-    
+        
+        scaledPoints = rotatedPoints - self.shiftCentering
+        scaledPoints = scaledPoints / self.mag
+        scaledPoints = scaledPoints + self.shiftCentering
+        
         shift = scaledPoints - self.DMDPoints
         self.shiftCam = np.array([[shift[0, 0]], [shift[1, 0]]])
         print self.shiftCam
@@ -184,13 +189,13 @@ class DLPModel:
 if __name__ == '__main__':
     DLPController = DLPModel(2048, 2048)
  
-    vertices = np.array([[0, 0], [0, 0], [500, 500], [0, 500]])
-    DLPController.setVertices(vertices)
-    DLPController.setRGB(0, 0, 130)
-    DLPController.setPattern()
+#    vertices = np.array([[0, 0], [0, 0], [500, 500], [0, 500]])
+#    DLPController.setVertices(vertices)
+#    DLPController.setRGB(0, 0, 130)
+#    DLPController.setPattern()
     print 'you can start your acquisition'
 #    DLPController.startActivation()
-#    DLPController.showCalibrationPattern2()
+    DLPController.showCalibrationPattern2()
     #gray_image = color.rgb2gray(mplimage)
     #plt.figure()
     #plt.imshow(gray_image, cmap='gray')
