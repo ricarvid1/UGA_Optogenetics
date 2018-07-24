@@ -206,20 +206,6 @@ class dmd():
         self.command('w',0xff,0x1a,0x1b,[int('00000001',2)])
         
     def controlLED(self,RGB):
-        '''
-        r=int((1-RGB[0])*255)
-        g=int((1-RGB[1])*255)
-        b=int((1-RGB[2])*255)
-        if r>255:
-            r=255
-        if g>255:
-            g=255
-        if b>255:
-            b=255
-#        btemp=hex(int(RGB[2]*1023))[2:]
-#        if len(btemp)<4:
-#            b='0'*(4-len(btemp))+btemp
-        '''
         rgb = np.array(RGB)
         rgb = 255 - rgb
         # LED Driver Current Control
@@ -227,4 +213,3 @@ class dmd():
         # LED PWM polarity 
         # set to normal
         self.command('w',0xff,0x1a,0x05,[int('00000000',2)])
-        
