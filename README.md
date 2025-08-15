@@ -11,4 +11,5 @@ Some known bugs:
 - The calibration routine must be checked as there still exists a shift in the adjusted vertices.
 - the red LED current field is not being used as the LED was deactivated to obtain perfect black.
 
-For some extra information please contact me at david-ricardo.sanchez-jacome_at_etu.univ-amu.fr
+For some extra information please create an issue. 
+f
